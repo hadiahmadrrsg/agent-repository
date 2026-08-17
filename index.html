@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Repository — Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Roboto','Segoe UI',sans-serif;min-height:100vh;background:#F5F6F8;color:#1A1A1A;display:flex}
+h1,h2,h3{font-family:'Nunito',sans-serif}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#ddd;border-radius:3px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fadeUp{animation:fadeUp .35s ease both}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+#sidebar{width:236px;background:#fff;border-right:1px solid #E5E7EB;padding:16px 10px;display:flex;flex-direction:column;gap:3px;flex-shrink:0;height:100vh;position:sticky;top:0;overflow-y:auto}
+.logo-row{display:flex;align-items:center;gap:10px;padding:10px 10px 18px;border-bottom:1px solid #E5E7EB;margin-bottom:12px}
+.logo-icon{width:36px;height:36px;border-radius:10px;background:#EE4D2D;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-title{font-family:'Nunito';font-size:15px;font-weight:900;letter-spacing:-.3px}
+.vchip{display:inline-block;padding:2px 7px;border-radius:6px;background:#FFF1ED;color:#EE4D2D;font-family:'Nunito';font-size:9.5px;font-weight:900;letter-spacing:.3px;vertical-align:2px;margin-left:5px}
+.vchip.big{font-size:11px;padding:3px 9px;background:#F3F4F6;color:#6B7280;vertical-align:3px}
+.logo-sub{font-size:10px;color:#6B7280;font-weight:700;letter-spacing:.3px}
+.nav-sect{font-size:10px;font-weight:800;color:#9CA3AF;letter-spacing:.8px;text-transform:uppercase;padding:12px 14px 6px;font-family:'Nunito'}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:11px 14px;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:left;font-family:'Nunito';transition:all .2s;background:transparent;color:#6B7280}
+.nav-btn:hover{background:#F3F4F6;color:#1A1A1A}
+.nav-btn.active{background:#EE4D2D;color:#fff;box-shadow:0 4px 15px rgba(238,77,45,.25)}
+.nav-btn:focus-visible{outline:2px solid #EE4D2D;outline-offset:2px}
+.nav-btn .label{flex:1}
+.nav-btn .count{padding:2px 9px;border-radius:20px;font-size:10px;font-weight:800;background:rgba(238,77,45,.1);color:#EE4D2D}
+.nav-btn.active .count{background:rgba(255,255,255,.25);color:#fff}
+.nav-btn .count.zero{background:#F3F4F6;color:#9CA3AF}
+.nav-btn.adm-head{background:#F9FAFB;color:#374151;margin-top:6px}
+.nav-btn.adm-head.open{background:#FFF1ED;color:#EE4D2D}
+.nav-btn .chev{font-size:11px;width:11px;flex-shrink:0}
+.adm-body{padding:4px 0 2px 10px;border-left:2px solid #FFD9CE;margin:3px 0 4px 16px;display:flex;flex-direction:column;gap:2px;animation:fadeUp .2s ease both}
+.nav-btn.sub{padding:9px 12px;font-size:12.5px}
+
+#main{flex:1;padding:26px 34px;overflow-y:auto;max-height:100vh}
+.card{background:#fff;border-radius:16px;border:1px solid #E5E7EB;box-shadow:0 1px 3px rgba(0,0,0,.04);padding:22px;margin-bottom:14px}
+.card-hover{transition:all .2s}.card-hover:hover{border-color:#EE4D2D;box-shadow:0 6px 24px rgba(238,77,45,.1)}
+.pg-title{font-size:23px;font-weight:900;font-family:'Nunito';letter-spacing:-.4px;margin-bottom:3px}
+.pg-sub{font-size:13px;color:#6B7280;margin-bottom:20px}
+.badge{display:inline-block;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.2px;font-family:'Nunito'}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:20px}
+.stat-label{font-size:11px;font-weight:800;color:#6B7280;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;font-family:'Nunito'}
+.stat-val{font-size:29px;font-weight:900;font-family:'Nunito';line-height:1}
+.stat-note{font-size:11px;color:#9CA3AF;margin-top:6px}
+.btn{padding:9px 18px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Nunito';border:none;transition:all .15s}
+.btn:focus-visible{outline:2px solid #EE4D2D;outline-offset:2px}
+.btn-primary{background:#EE4D2D;color:#fff;box-shadow:0 4px 12px rgba(238,77,45,.25)}
+.btn-primary:hover{background:#D6431F}
+.btn-outline{border:1.5px solid #E5E7EB;background:#fff;color:#6B7280}
+.btn-outline:hover{border-color:#EE4D2D;color:#EE4D2D}
+.btn-done{background:#ECFDF5;color:#059669;border:1.5px solid #A7F3D0;cursor:default}
+.btn-del{border:1.5px solid #FECACA;background:#fff;color:#DC2626}
+.btn-del:hover{background:#FEF2F2}
+.btn-xs{padding:6px 12px;font-size:11.5px;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.inp{width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid #E5E7EB;font-size:13px;font-family:inherit;outline:none;transition:border .2s;background:#fff}
+.inp:focus{border-color:#EE4D2D;box-shadow:0 0 0 3px rgba(238,77,45,.1)}
+.flab{display:block;font-family:'Nunito';font-size:11px;font-weight:800;color:#6B7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.chip{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:800;cursor:pointer;font-family:'Nunito';border:1.5px solid #E5E7EB;background:#fff;color:#6B7280;transition:all .15s}
+.chip:hover{border-color:#EE4D2D;color:#EE4D2D}
+.chip.on{background:#EE4D2D;border-color:#EE4D2D;color:#fff}
+.entry{border:1px solid #E5E7EB;border-radius:14px;padding:18px 20px;margin-bottom:11px;background:#fff;transition:all .2s}
+.entry:hover{border-color:#EE4D2D;box-shadow:0 6px 20px rgba(238,77,45,.08)}
+.entry.done{background:#FAFAFA;border-color:#F0F0F0}
+.entry-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:9px}
+.eid{font-family:monospace;font-size:11px;font-weight:700;color:#9CA3AF;letter-spacing:.5px}
+.entry-title{font-family:'Nunito';font-size:15.5px;font-weight:800;line-height:1.45;margin-bottom:6px}
+.entry-body{font-size:13.5px;color:#4B5563;line-height:1.65;margin-bottom:13px;white-space:pre-line}
+.entry-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.gal{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:13px}
+.nothumb{height:82px;width:112px;border-radius:9px;border:1px dashed #E5E7EB;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#9CA3AF;font-family:'Nunito';font-weight:700;background:#FAFAFA}
+.playbtn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;pointer-events:none}
+.thumb{cursor:pointer}
+.gal img,.gal video{height:82px;width:112px;object-fit:cover;border-radius:9px;border:1px solid #E5E7EB;cursor:pointer;background:#F3F4F6}
+.thumb{position:relative;display:inline-block}
+.thumb .x{position:absolute;top:-6px;right:-6px;width:21px;height:21px;border-radius:50%;background:#DC2626;color:#fff;border:2px solid #fff;font-size:12px;font-weight:800;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+.drop{border:2px dashed #E5E7EB;border-radius:12px;padding:15px;text-align:center;cursor:pointer;transition:all .2s;font-size:12.5px;color:#6B7280;font-family:'Nunito';font-weight:700}
+.drop:hover{border-color:#EE4D2D;background:#FFF5F2;color:#EE4D2D}
+.bar{height:7px;border-radius:4px;background:#F3F4F6;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:#EE4D2D;transition:width .4s}
+.mtx{border-collapse:separate;border-spacing:0;font-size:11px;width:100%}
+.mtx th{font-family:'Nunito';font-weight:800;color:#6B7280;padding:7px 5px;text-align:center;font-size:10px;border-bottom:1.5px solid #E5E7EB;white-space:nowrap}
+.mtx th.who{text-align:left;padding-left:2px;min-width:160px}
+.mtx td{padding:5px;text-align:center;border-bottom:1px solid #F3F4F6}
+.mtx td.who{text-align:left;font-size:12px;color:#374151;padding-left:2px;font-weight:500}
+.dot{width:19px;height:19px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.dot.y{background:#ECFDF5;color:#059669}
+.dot.n{background:#FEF2F2;color:#DC2626}
+.mrow{display:flex;align-items:center;gap:14px;padding:13px 20px;border-bottom:1px solid #F3F4F6}
+.mrow:last-child{border-bottom:none}
+.mrow:hover{background:#FAFAFA}
+.demo-bar{background:#113366;color:#fff;padding:9px 18px;border-radius:12px;display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.demo-bar b{font-family:'Nunito';font-size:12px;font-weight:800;letter-spacing:.3px}
+.demo-bar span{font-size:12px;opacity:.85}
+#toast{position:fixed;top:20px;right:20px;z-index:999;padding:12px 16px 12px 20px;border-radius:12px;background:#1A1A1A;color:#fff;font-size:13px;font-weight:700;font-family:'Nunito';box-shadow:0 8px 30px rgba(0,0,0,.25);display:none;align-items:center;gap:14px;animation:fadeUp .3s ease}
+#toast .u{background:rgba(255,255,255,.15);border:none;color:#fff;font-family:'Nunito';font-weight:800;font-size:12px;padding:6px 13px;border-radius:8px;cursor:pointer}
+#toast .u:hover{background:rgba(255,255,255,.3)}
+.empty{text-align:center;padding:52px 20px;color:#9CA3AF}
+.empty-t{font-family:'Nunito';font-size:16px;font-weight:800;color:#6B7280;margin-bottom:5px}
+.gate{position:fixed;inset:0;z-index:1000;background:#EE4D2D;display:flex;align-items:center;justify-content:center;padding:20px}
+.gate-box{background:#fff;border-radius:24px;padding:44px 38px;max-width:410px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.3);text-align:center}
+.sync{margin-top:8px;padding:8px 12px;border-radius:10px;font-size:11px;font-weight:700;background:#ECFDF5;color:#059669;display:flex;align-items:center;gap:6px;font-family:'Nunito'}
+.sync i{width:7px;height:7px;border-radius:50%;background:#059669;flex-shrink:0;display:inline-block}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;display:flex;align-items:center;justify-content:center;padding:40px;cursor:zoom-out}
+.lightbox img,.lightbox video{max-width:100%;max-height:100%;border-radius:12px}
+.bposw{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;margin-top:6px;border-radius:11px;border:1.5px solid #E5E7EB;background:#fff;cursor:pointer;font-family:'Nunito';font-size:12px;font-weight:800;color:#374151;transition:all .15s}
+.bposw:hover{border-color:#EE4D2D;color:#EE4D2D}
+.bposw.locked{cursor:default;background:#F9FAFB;color:#9CA3AF;border-style:dashed}
+.bposw.locked:hover{border-color:#E5E7EB;color:#9CA3AF}
+.bposw .tick{margin-left:auto;font-size:11px}
+.bpolist{display:flex;flex-direction:column;gap:2px;padding:5px 0 2px 8px;border-left:2px solid #FFD9CE;margin:4px 0 2px 12px;animation:fadeUp .2s ease both}
+.bpoitem{text-align:left;border:none;background:transparent;padding:8px 11px;border-radius:9px;font-family:'Nunito';font-size:12px;font-weight:700;color:#6B7280;cursor:pointer}
+.bpoitem:hover{background:#F3F4F6;color:#1A1A1A}
+.bpoitem.on{background:#EE4D2D;color:#fff}
+.nav-btn.sup-head{background:#F9FAFB;color:#374151;margin-top:4px}
+.nav-btn.sup-head.open{background:#EEF2FF;color:#0053DE}
+.adm-body.sup{border-left-color:#C7D7FE}
+.ptab{width:100%;border-collapse:collapse;font-size:12.5px}
+.ptab th{text-align:left;font-family:'Nunito';font-size:10.5px;font-weight:800;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1.5px solid #E5E7EB}
+.ptab td{padding:8px 10px;border-bottom:1px solid #F3F4F6;vertical-align:middle}
+.ptab tr:hover td{background:#FAFAFA}
+.ptab select{padding:5px 8px;border-radius:7px;border:1.5px solid #E5E7EB;font-family:'Nunito';font-size:11.5px;font-weight:700;background:#fff;cursor:pointer}
+.rule{display:flex;align-items:center;gap:9px;padding:9px 12px;border:1px solid #E5E7EB;border-radius:10px;margin-bottom:7px;font-size:12.5px}
+.kw{font-family:monospace;background:#F3F4F6;padding:3px 8px;border-radius:6px;font-size:12px;color:#1A1A1A}
+.denied{max-width:430px;text-align:center}
+.tog{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;border:1.5px solid #E5E7EB;background:#fff;cursor:pointer;font-family:'Nunito';font-size:11.5px;font-weight:800;color:#9CA3AF;transition:all .15s}
+.tog:hover{border-color:#EE4D2D}
+.tog.on{background:#EE4D2D;border-color:#EE4D2D;color:#fff}
+.tog .b{width:13px;height:13px;border-radius:4px;border:1.5px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font-size:9px;line-height:1}
+.bars{display:flex;align-items:flex-end;gap:5px;height:110px;padding-top:6px}
+.bcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;height:100%}
+.bcol .v{width:100%;background:#EE4D2D;border-radius:5px 5px 2px 2px;min-height:2px;transition:height .4s}
+.bcol .v.alt{background:#FFC5B4}
+.bcol .l{font-size:9.5px;color:#9CA3AF;font-family:'Nunito';font-weight:700;white-space:nowrap}
+.log{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid #F3F4F6;font-size:12.5px}
+.log:last-child{border-bottom:none}
+.log .ic{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;font-family:'Nunito';flex-shrink:0}
+.rank{display:flex;align-items:center;gap:10px;padding:9px 0}
+.rank .n{width:20px;font-family:'Nunito';font-weight:900;font-size:12px;color:#D1D5DB}
+.tf-bar{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0}
+.tf-bar:hover .tf-tip{display:block}
+.tf-tip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#111827;color:#fff;border-radius:9px;padding:9px 12px;font-size:11px;min-width:150px;max-width:250px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.3);text-align:left;pointer-events:none;line-height:1.5}
+.tf-tip .ar{position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#111827}
+.heat{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+.heat:hover .tf-tip{display:block}
+.modal-wrap{position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:1500;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
+.modal{background:#fff;border-radius:18px;max-width:720px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.3);animation:fadeUp .25s ease both}
+.modal-hd{display:flex;align-items:center;gap:10px;padding:18px 24px;border-bottom:1px solid #F3F4F6}
+.modal-bd{padding:22px 24px}
+.pod{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;min-width:0}
+.pod .stand{width:100%;border-radius:10px 10px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:6px}
+.ptab th.srt{cursor:pointer;user-select:none}
+.ptab th.srt:hover{color:#EE4D2D}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gate-box" id="gate-box"></div>
+</div>
+
+<div id="sidebar" style="display:none">
+  <div class="logo-row">
+    <div class="logo-icon"><svg width="21" height="21" viewBox="0 0 120 120"><path d="M60 16c-8 0-15 4.5-18.5 11.2h37C75 20.5 68 16 60 16z" fill="#fff"/><path d="M41 26h-1.5c-.5 0-1 .1-1.4.3A27.5 27.5 0 0032 28v.5l3 56c.3 5 4.5 9 9.5 9h31c5 0 9.2-4 9.5-9l3-56V28a27 27 0 00-6-1.7c-.5-.2-1-.3-1.5-.3H79" fill="#fff"/></svg></div>
+    <div><div class="logo-title" id="appTitle">Agent Repository</div><div class="logo-sub">Return and Refund</div></div>
+  </div>
+  <div id="who" style="padding:0 6px 10px"></div>
+  <div id="nav"></div>
+  <div style="flex:1"></div>
+  <div id="nav-admin"></div>
+  <div id="nav-super"></div>
+  <div class="sync"><i></i><span>Live · Firebase</span></div>
+</div>
+
+<div id="main" style="display:none"></div>
+<div id="toast"></div>
+<div id="lb"></div>
+
+<div id="modal"></div>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection,
+         getDocs, query, where, orderBy, limit, writeBatch, runTransaction, deleteField }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+/* Firebase config for project agent-repository-c4dac.
+   The apiKey is public by design — it identifies the project, it grants nothing.
+   The security rules are what protect the data. */
+const firebaseConfig = {
+  apiKey: "AIzaSyCallb8RJqoE10jpkcdhrgmQOFMfI77MHY",
+  authDomain: "agent-repository-c4dac.firebaseapp.com",
+  projectId: "agent-repository-c4dac",
+  storageBucket: "agent-repository-c4dac.firebasestorage.app",
+  messagingSenderId: "1035048450570",
+  appId: "1:1035048450570:web:3306ba5b08f819cb9d3df3"
+};
+
+const app = initializeApp(firebaseConfig);
+const FBX = { app, auth:getAuth(app), db:getFirestore(app),
+  GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+  doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection,
+  getDocs, query, where, orderBy, limit, writeBatch, runTransaction, deleteField };
+window.__FB = FBX;
+if (window.__fbBoot) window.__fbBoot(FBX);
+</script>
+<script>
+const BPOS=['Vads','ePerformax','Asia Recruit'];
+const IH='In House';
+const ORGS=[IH].concat(BPOS);
+const ROLES=['Agent','Coach','TL','QA','Trainer','FTE','Admin','Super Admin'];
+const ADMIN_ROLES=['Coach','TL','QA','Trainer','FTE','Admin','Super Admin'];
+
+/* whitelist — every row added by hand in Super Admin. bpos[] is what they may open. */
+let PEOPLE=[];
+
+const MODULES={
+  HU:{name:'Daily huddle',color:'#EE4D2D',bg:'#FFF1ED',owner:'TL / Coach',shared:false},
+  CA:{name:'QA calibration',color:'#0053DE',bg:'#EAF1FE',owner:'QA',shared:false},
+  RE:{name:'Refresher',color:'#26AA99',bg:'#E6F7F5',owner:'Trainer',shared:false},
+  PU:{name:'Policy update',color:'#D0011B',bg:'#FDECEE',owner:'IH team',shared:true},
+  MI:{name:'Reminder',color:'#8B5CF6',bg:'#F1EBFE',owner:'TL / IH team',shared:false}
+};
+
+const ENTRIES=[];
+
+
+
+const SEED={};
+let ORPHANS=[];
+const ACKS={};
+function seedAcks(){PEOPLE.forEach(p=>{if(!ACKS[p.e])ACKS[p.e]=new Set(SEED[p.e]||[])})}
+seedAcks();
+
+let QUESTIONS=[];
+
+/* ─── version ─── */
+/* Append one entry per day that changes are made. Everything else derives from this:
+   the version number, the title in the sidebar, the gate, the browser tab and the
+   history screen. Major = release day, minor = revisions within that same day. */
+const CHANGELOG=[
+{v:'3.3',d:'2026-08-17',by:'hadi.ahmad@shopee.com',notes:[
+ 'Removed the prototype banner from every screen',
+ 'Code now lives in a private GitHub repository with automatic deployment'
+]},
+{v:'3.2',d:'2026-08-17',by:'import',notes:[
+ 'Namelist is now 27 people — 9 In House super admins and 18 BPO admins',
+ 'In House accounts can open all three BPO sections; BPO admins are locked to their own',
+ 'Added FTE and Coach as designations'
+]},
+{v:'3.0',d:'2026-08-17',by:'import',notes:[
+ 'Live on Firebase — data persists and is shared across everyone',
+ 'Google sign-in restricted to the namelist, enforced by Firestore security rules',
+ 'BPO isolation enforced on the server, not just hidden in the interface',
+ 'Entry IDs assigned by a transaction so two admins cannot collide',
+ 'Undo performs a real reverse write instead of restoring a local snapshot',
+ 'Imported 49 entries and 950 acknowledgements from the two trackers'
+]}
+];
+const APP_V=CHANGELOG[0].v;
+const APP_NAME='Agent Repository';
+
+/* ─── access requests and denied attempts ─── */
+let REQUESTS=[];
+let DENIED=[];
+
+/* ─── nudge tracking ─── */
+/* last = when this person was last nudged, used for the cooldown */
+const MAIL={};
+function seedMail(){PEOPLE.forEach(p=>{if(!MAIL[p.e])MAIL[p.e]={last:0}})}
+seedMail();
+const REM={cooldown:5};
+let REMLOG=[];
+
+/* ─── traffic store ─── */
+/* Seeded from the real acknowledgement timestamps in the two trackers.
+   Views and sign-ins accumulate from here as people actually use the app. */
+const EVENTS=[];
+const NOW=new Date();
+let LASTEV=NOW;
+function recalcLast(){LASTEV=EVENTS.length?new Date(Math.max.apply(null,EVENTS.map(e=>e.t))):NOW}
+const dayKey=d=>d.toISOString().slice(0,10);
+function logEv(k,id,b){EVENTS.unshift({t:Date.now(),k:k,w:S.me,b:b,id:id})}
+
+let S={tab:'home',me:null,adminOpen:false,superOpen:false,bpoOpen:false,view:null,q:'',filter:'all',
+  edit:null,orig:null,editNew:false,err:'',denied:null,reqOpen:false,reqDone:false,pickOpen:false,open:null,paste:'',copyText:'',copyLabel:'',copyFor:[],qopen:null,
+  tfUser:'',tfSort:'total-desc',modal:null};
+let UNDO=null;
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const findPerson=e=>PEOPLE.find(p=>p.e.toLowerCase()===String(e).toLowerCase().trim());
+const me=()=>findPerson(S.me)||{n:'—',o:IH,r:'Agent',e:'',bpos:[]};
+const isAdmin=()=>!!(me().adm||me().sup);
+const isSuper=()=>!!me().sup;
+const multiBpo=()=>me().bpos.length>1;
+const nameOf=e=>(findPerson(e)||{}).n||e;
+const orgOf=e=>(findPerson(e)||{}).o||'—';
+const fmt=d=>d?new Date(d.length>10?d:d+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
+const fmtT=ms=>new Date(ms).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+const rid=e=>e.ref||e.id;
+const pct=(n,d)=>d?Math.round(n/d*100):0;
+const visible=(e,b)=>e.st==='pub'&&(e.aud==='all'||e.aud===b);
+const scopeList=()=>S.view==='__all'?me().bpos:[S.view];
+const forBpo=b=>ENTRIES.filter(e=>visible(e,b));
+const live=()=>{const s=scopeList();return ENTRIES.filter(e=>e.st==='pub'&&(e.aud==='all'||s.indexOf(e.aud)>=0))};
+const mine=()=>{if(!ACKS[S.me])ACKS[S.me]=new Set();return ACKS[S.me]};
+const pending=()=>live().filter(e=>!mine().has(e.id));
+const scopeAgents=()=>{const s=scopeList();return PEOPLE.filter(p=>p.r==='Agent'&&s.indexOf(p.o)>=0)};
+const viewLabel=()=>S.view==='__all'?'All my BPOs':S.view;
+const inScope=e=>{const s=scopeList();return e.aud==='all'||s.indexOf(e.aud)>=0};
+
+function toast(msg,u){
+  const t=$('toast');
+  t.innerHTML='<span>'+esc(msg)+'</span>'+(u?'<button class="u" onclick="doUndo()">Undo</button>':'');
+  t.style.display='flex';clearTimeout(t._x);t._x=setTimeout(()=>{t.style.display='none'},u?7000:2400);
+}
+function snap(){UNDO={entries:JSON.parse(JSON.stringify(ENTRIES)),people:JSON.parse(JSON.stringify(PEOPLE)),
+  qs:JSON.parse(JSON.stringify(QUESTIONS)),acks:Object.keys(ACKS).reduce((o,k)=>{o[k]=Array.from(ACKS[k]);return o},{})}}
+function doUndo(){
+  if(!UNDO)return;
+  ENTRIES.length=0;UNDO.entries.forEach(e=>ENTRIES.push(e));
+  PEOPLE.length=0;UNDO.people.forEach(p=>PEOPLE.push(p));
+  QUESTIONS.length=0;UNDO.qs.forEach(q=>QUESTIONS.push(q));
+  Object.keys(ACKS).forEach(k=>delete ACKS[k]);
+  Object.keys(UNDO.acks).forEach(k=>{ACKS[k]=new Set(UNDO.acks[k])});
+  UNDO=null;$('toast').style.display='none';toast('Reverted');render();
+}
+
+/* ─── sign in ─── */
+const GLOGO='<div style="width:66px;height:66px;border-radius:18px;background:#EE4D2D;display:flex;align-items:center;justify-content:center;margin:0 auto 18px">'+
+  '<svg width="34" height="34" viewBox="0 0 120 120"><path d="M60 16c-8 0-15 4.5-18.5 11.2h37C75 20.5 68 16 60 16z" fill="#fff"/><path d="M41 26h-1.5c-.5 0-1 .1-1.4.3A27.5 27.5 0 0032 28v.5l3 56c.3 5 4.5 9 9.5 9h31c5 0 9.2-4 9.5-9l3-56V28a27 27 0 00-6-1.7c-.5-.2-1-.3-1.5-.3H79" fill="#fff"/></svg></div>';
+const GBTN='<svg width="19" height="19" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+
+function renderGate(){
+  const box=$('gate-box');
+  /* denied — one neutral message regardless of why */
+  if(S.denied){
+    const already=REQUESTS.some(r=>r.e===S.denied&&r.st==='pending');
+    box.innerHTML=GLOGO+
+      '<h1 style="font-size:20px;font-weight:900;margin-bottom:6px">No access to this application</h1>'+
+      '<p style="font-size:13px;color:#6B7280;line-height:1.65;margin-bottom:22px">This Google account is not authorised. If you should have access, ask your team lead or request it below.</p>'+
+      (S.reqDone
+        ? '<div style="background:#ECFDF5;color:#065F46;font-size:13px;padding:14px 16px;border-radius:11px;line-height:1.6;text-align:left">Request sent. A super admin will review it — you will be able to sign in once it is approved.</div>'+
+          '<button class="btn btn-outline" style="width:100%;margin-top:14px" onclick="resetGate()">Back to sign in</button>'
+        : already
+        ? '<div style="background:#FFFBEB;color:#92400E;font-size:13px;padding:14px 16px;border-radius:11px;line-height:1.6;text-align:left">A request for this address is already waiting for review.</div>'+
+          '<button class="btn btn-outline" style="width:100%;margin-top:14px" onclick="resetGate()">Back to sign in</button>'
+        : S.reqOpen
+        ? '<div style="text-align:left">'+
+            '<label class="flab">Signed in as</label><div class="inp" style="background:#F9FAFB;color:#6B7280;font-size:12.5px;margin-bottom:11px">'+esc(S.denied)+'</div>'+
+            '<label class="flab">Your full name</label><input class="inp" id="rqn" placeholder="Full name" style="margin-bottom:11px">'+
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:11px">'+
+              '<div><label class="flab">BPO</label><select class="inp" id="rqb"><option value="">Select…</option>'+
+                ORGS.map(o=>'<option value="'+o+'">'+o+'</option>').join('')+'</select></div>'+
+              '<div><label class="flab">Designation</label><select class="inp" id="rqd"><option value="">Select…</option>'+
+                ROLES.filter(y=>y!=='Super Admin').map(y=>'<option value="'+y+'">'+y+'</option>').join('')+'</select></div>'+
+            '</div>'+
+            '<label class="flab">Anything else we should know?</label><textarea class="inp" id="rqm" rows="3" style="resize:vertical;font-family:inherit" placeholder="e.g. Started on the RR queue this Monday, my TL is …"></textarea>'+
+            '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" style="flex:1" onclick="submitRequest()">Send request</button>'+
+            '<button class="btn btn-outline" onclick="resetGate()">Cancel</button></div></div>'
+        : '<button class="btn btn-primary" style="width:100%;padding:12px;margin-bottom:9px" onclick="S.reqOpen=true;renderGate()">Request access</button>'+
+          '<button class="btn btn-outline" style="width:100%" onclick="resetGate()">Try another account</button>');
+    return;
+  }
+  box.innerHTML=GLOGO+
+    '<h1 style="font-size:23px;font-weight:900;margin-bottom:5px">'+APP_NAME+' <span class="vchip big">v'+APP_V+'</span></h1>'+
+    '<p style="font-size:13.5px;color:#6B7280;margin-bottom:26px">Return and Refund</p>'+
+    '<button class="btn" onclick="togglePick()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:11px;padding:13px;border-radius:12px;border:1.5px solid #E5E7EB;background:#fff;font-size:14.5px;color:#3C4043">'+
+    GBTN+'<span>Sign in with Google</span></button>'+
+    '';
+}
+function resetGate(){S.denied=null;S.reqOpen=false;S.reqDone=false;S.pickOpen=false;renderGate()}
+function submitRequest(){
+  const n=($('rqn').value||'').trim(),b=$('rqb').value,d=$('rqd').value,note=($('rqm').value||'').trim();
+  if(!n){toast('Enter your full name');return}
+  if(!b){toast('Pick your BPO');return}
+  if(!d){toast('Pick your designation');return}
+  REQUESTS.unshift({e:S.denied,n:n,bpo:b,desig:d,note:note,t:Date.now(),st:'pending'});
+  S.reqDone=true;renderGate();
+}
+function togglePick(){S.pickOpen=!S.pickOpen;renderGate()}
+function signIn(v){
+  v=String(v||'').trim().toLowerCase();
+  if(!v)return;
+  const p=findPerson(v);
+  /* not listed, or listed with nothing enabled — same outcome, same message */
+  if(!p||!p.bpos.length){
+    DENIED.unshift({e:v,t:Date.now()});
+    S.denied=v;S.reqOpen=false;S.reqDone=false;renderGate();return;
+  }
+  S.me=p.e;S.denied=null;S.pickOpen=false;
+  S.view=p.bpos.length>1?'__all':p.bpos[0];S.tab='home';
+  if(!ACKS[p.e])ACKS[p.e]=new Set(SEED[p.e]||[]);
+  logEv('login');
+  $('gate').style.display='none';$('sidebar').style.display='flex';$('main').style.display='block';
+  render();
+}
+function signOut(){S.me=null;S.denied=null;S.reqOpen=false;S.reqDone=false;S.adminOpen=S.superOpen=S.bpoOpen=false;S.gateErr='';S.open=null;closeModal();$('gate').style.display='flex';$('sidebar').style.display='none';$('main').style.display='none';renderGate()}
+
+/* ─── actions ─── */
+function ack(id,ev){if(ev)ev.stopPropagation();if(mine().has(id))return;snap();mine().add(id);logEv('ack',id);toast('Acknowledged',true);render()}
+function askQ(id,ev){if(ev)ev.stopPropagation();snap();QUESTIONS.push({id:id,by:S.me,q:'(demo) Follow-up question raised from the entry card'});if(!mine().has(id))mine().add(id);toast('Question sent to '+MODULES[id.split('-')[0]].owner,true);render()}
+function go(t){S.tab=t;S.q='';S.filter='all';S.edit=null;S.open=null;render()}
+function toggleAdmin(){S.adminOpen=!S.adminOpen;if(S.adminOpen&&['manage','admin','chase','reminders','traffic','qs'].indexOf(S.tab)<0){S.tab='manage';S.edit=null}renderSide();renderMain()}
+function toggleSuper(){S.superOpen=!S.superOpen;if(S.superOpen&&['people','requests','audit','versions'].indexOf(S.tab)<0){S.tab='people';S.edit=null}renderSide();renderMain()}
+function toggleBpo(){if(!multiBpo())return;S.bpoOpen=!S.bpoOpen;renderSide()}
+function setView(v){S.view=v;S.bpoOpen=false;S.q='';render();toast('Viewing '+viewLabel())}
+function setQ(v){S.q=v.toLowerCase();renderMain()}
+function setFilter(f){S.filter=f;renderMain()}
+function lightbox(src,vid,ev){if(ev)ev.stopPropagation();$('lb').innerHTML='<div class="lightbox" onclick="this.remove()">'+(vid?'<video src="'+src+'" controls autoplay></video>':'<img src="'+src+'">')+'</div>'}
+function closeModal(){S.modal=null;S.open=null;S.copyText='';S.copyFor=[];$('modal').innerHTML=''}
+
+/* ─── entry detail card ─── */
+function openCard(id){S.open=id;logEv('view',id);renderModal()}
+function renderModal(){
+  if(S.modal==='copy'){
+    $('modal').innerHTML='<div class="modal-wrap" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:620px">'+
+      '<div class="modal-hd"><div style="font-family:Nunito;font-weight:900;font-size:16px">'+esc(S.copyLabel||'Copy reminder')+'</div>'+
+      '<button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="closeModal()">Cancel</button></div>'+
+      '<div class="modal-bd">'+
+      '<div style="font-size:12.5px;color:#6B7280;line-height:1.6;margin-bottom:12px">Copy this and paste it into the agent chat yourself. Copying marks them as nudged, so the cooldown applies the same way it does for email.</div>'+
+      '<textarea class="inp" id="copyArea" rows="12" style="font-family:inherit;font-size:12.5px;line-height:1.65;resize:vertical" onclick="this.select()">'+esc(S.copyText||'')+'</textarea>'+
+      '<div style="display:flex;gap:9px;margin-top:14px"><button class="btn btn-primary" onclick="doCopy()">Copy to clipboard</button>'+
+      '<button class="btn btn-outline" onclick="closeModal()">Close</button></div></div></div></div>';
+    const ta=$('copyArea');if(ta){ta.focus();ta.select()}
+    return;
+  }
+  if(!S.open){$('modal').innerHTML='';return}
+  const e=ENTRIES.find(x=>x.id===S.open);
+  if(!e){$('modal').innerHTML='';return}
+  const M=MODULES[e.m],done=mine().has(e.id);
+  const pool=PEOPLE.filter(a=>a.r==='Agent'&&(e.aud==='all'?a.o!==IH:a.o===e.aud));
+  const got=pool.filter(a=>ACKS[a.e]&&ACKS[a.e].has(e.id));
+  const views=EVENTS.filter(v=>v.k==='view'&&v.id===e.id).length;
+  const qs=QUESTIONS.filter(q=>q.id===e.id);
+  $('modal').innerHTML='<div class="modal-wrap" onclick="if(event.target===this)closeModal()"><div class="modal">'+
+    '<div class="modal-hd"><span class="badge" style="background:'+M.bg+';color:'+M.color+'">'+M.name+'</span>'+
+      '<span class="eid">'+rid(e)+'</span>'+audBadge(e)+
+      '<span class="badge" style="background:'+(e.st==='pub'?'#ECFDF5':'#FFFBEB')+';color:'+(e.st==='pub'?'#059669':'#B45309')+'">'+(e.st==='pub'?'Published':'Draft')+'</span>'+
+      '<button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="closeModal()">Close</button></div>'+
+    '<div class="modal-bd">'+
+      '<div style="font-family:Nunito;font-weight:900;font-size:19px;line-height:1.4;margin-bottom:8px">'+esc(e.title)+'</div>'+
+      (e.cat?'<div style="font-size:12px;color:#9CA3AF;margin-bottom:12px">'+esc(e.cat)+'</div>':'')+
+      '<div style="font-size:14px;color:#374151;line-height:1.75;white-space:pre-line;margin-bottom:16px">'+esc(e.body)+'</div>'+
+      gallery(e)+
+      (e.score?'<div style="font-size:13px;color:#059669;font-weight:500;margin-bottom:12px">Result: '+esc(e.score)+'</div>':'')+
+      (e.follow?'<div style="font-size:13px;color:#B45309;background:#FFFBEB;padding:10px 14px;border-radius:10px;margin-bottom:14px">Follow-up: '+esc(e.follow)+'</div>':'')+
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0;padding:14px 0;border-top:1px solid #F3F4F6;border-bottom:1px solid #F3F4F6">'+
+        '<div><div class="stat-label" style="margin-bottom:4px">Effective</div><div style="font-size:13px;font-weight:500">'+fmt(e.date)+'</div></div>'+
+        '<div><div class="stat-label" style="margin-bottom:4px">Published by</div><div style="font-size:13px;font-weight:500">'+esc(nameOf(e.pb))+'</div></div>'+
+        '<div><div class="stat-label" style="margin-bottom:4px">Acknowledged</div><div style="font-size:13px;font-weight:500">'+got.length+' of '+pool.length+'</div></div>'+
+        '<div><div class="stat-label" style="margin-bottom:4px">Views</div><div style="font-size:13px;font-weight:500">'+views+'</div></div>'+
+      '</div>'+
+      (isAdmin()&&pool.length?'<div style="margin-bottom:16px"><div class="stat-label" style="margin-bottom:8px">Who has acknowledged</div>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">'+pool.map(a=>{const y=ACKS[a.e]&&ACKS[a.e].has(e.id);
+        return '<span class="badge" style="background:'+(y?'#ECFDF5':'#FEF2F2')+';color:'+(y?'#059669':'#DC2626')+'">'+(y?'✓ ':'· ')+esc(a.n)+'</span>'}).join('')+'</div></div>':'')+
+      (qs.length?'<div style="margin-bottom:16px"><div class="stat-label" style="margin-bottom:8px">Questions raised</div>'+
+        qs.map(q=>'<div style="font-size:13px;background:#F9FAFB;padding:10px 13px;border-radius:9px;margin-bottom:6px">'+esc(q.q)+'<div style="font-size:11px;color:#9CA3AF;margin-top:4px">'+esc(nameOf(q.by))+'</div></div>').join('')+'</div>':'')+
+      '<div class="entry-actions">'+
+        (done?'<button class="btn btn-done">Acknowledged</button>':'<button class="btn btn-primary" onclick="ack(\''+e.id+'\')">Acknowledge</button>')+
+        (e.link?'<button class="btn btn-outline" onclick="toast(\'Opens the reference link\')">Open reference</button>':'')+
+        '<button class="btn btn-outline" onclick="askQ(\''+e.id+'\')">Ask a question</button>'+
+        (isAdmin()&&(me().bpos.indexOf(e.aud)>=0||(e.aud==='all'&&multiBpo()))?'<button class="btn btn-outline" style="margin-left:auto" onclick="closeModal();go(\'manage\');openEditor(\''+e.id+'\')">Edit entry</button>':'')+
+      '</div></div></div></div>';
+}
+
+/* ─── sidebar ─── */
+function renderSide(){
+  const p=me(),opts=(multiBpo()?['__all']:[]).concat(p.bpos);
+  $('who').innerHTML=
+    '<div style="display:flex;align-items:center;gap:9px;padding:7px 8px;background:#F9FAFB;border-radius:11px">'+
+      '<div style="width:31px;height:31px;border-radius:50%;background:#EE4D2D;color:#fff;display:flex;align-items:center;justify-content:center;font-family:Nunito;font-weight:900;font-size:12px;flex-shrink:0">'+esc(p.n.split(' ').map(x=>x[0]).join(''))+'</div>'+
+      '<div style="min-width:0;flex:1"><div style="font-family:Nunito;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(p.n)+'</div>'+
+      '<div style="font-size:10px;color:#9CA3AF">'+esc(p.r)+' · '+esc(p.o)+'</div></div>'+
+      '<button class="btn btn-outline btn-xs" style="padding:4px 8px;font-size:10px" onclick="signOut()">Exit</button></div>'+
+    '<button class="bposw '+(multiBpo()?'':'locked')+'" onclick="toggleBpo()">'+
+      '<span style="font-size:13px">'+(multiBpo()?'◍':'🔒')+'</span><span>'+esc(viewLabel())+'</span>'+
+      (multiBpo()?'<span class="tick">'+(S.bpoOpen?'▴':'▾')+'</span>':'')+'</button>'+
+    (S.bpoOpen&&multiBpo()?'<div class="bpolist">'+opts.map(b=>'<button class="bpoitem '+(S.view===b?'on':'')+'" onclick="setView(\''+b+'\')">'+(b==='__all'?'All my BPOs':b)+'</button>').join('')+'</div>':'');
+
+  const un=k=>live().filter(e=>e.m===k&&!mine().has(e.id)).length;
+  const tabs=[{k:'home',l:'My updates',c:pending().length},{k:'HU',l:'Daily huddle',c:un('HU')},{k:'CA',l:'QA calibration',c:un('CA')},{k:'RE',l:'Refresher',c:un('RE')},{k:'PU',l:'Policy updates',c:un('PU')},{k:'MI',l:'Reminder',c:un('MI')},{k:'done',l:'My acknowledgement',c:mine().size}];
+  $('nav').innerHTML='<div class="nav-sect">Repository · unread</div>'+tabs.map(t=>
+    '<button class="nav-btn '+(S.tab===t.k?'active':'')+'" onclick="go(\''+t.k+'\')"><span class="label">'+t.l+'</span><span class="count '+(t.c?'':'zero')+'">'+t.c+'</span></button>').join('');
+
+  if(isAdmin()){
+    const s=scopeList(),drafts=ENTRIES.filter(e=>e.st==='draft'&&inScope(e)).length,open=S.adminOpen;
+    const qn=QUESTIONS.filter(q=>{const e=ENTRIES.find(x=>x.id===q.id);return e&&inScope(e)}).length;
+    const due=remRows().filter(r=>r.ok).length;
+    const t=[{k:'manage',l:'Manage entries',c:drafts},{k:'admin',l:'Coverage'},{k:'chase',l:'Chase list'},{k:'reminders',l:'Nudge',c:due},{k:'traffic',l:'Traffic'},{k:'qs',l:'Questions',c:qn}];
+    $('nav-admin').innerHTML='<button class="nav-btn adm-head '+(open?'open':'')+'" onclick="toggleAdmin()"><span class="chev">'+(open?'▾':'▸')+'</span><span class="label">Admin</span>'+(!open&&qn?'<span class="count">'+qn+'</span>':'')+'</button>'+
+      (open?'<div class="adm-body">'+t.map(x=>'<button class="nav-btn sub '+(S.tab===x.k?'active':'')+'" onclick="go(\''+x.k+'\')"><span class="label">'+x.l+'</span>'+(x.c?'<span class="count">'+x.c+'</span>':'')+'</button>').join('')+'</div>':'');
+  } else $('nav-admin').innerHTML='';
+
+  if(isSuper()){
+    const open=S.superOpen,pend=REQUESTS.filter(r=>r.st==='pending').length;
+    const t=[{k:'people',l:'People and access',c:PEOPLE.length},{k:'requests',l:'Access requests',c:pend},{k:'audit',l:'Traffic and publishing'},{k:'versions',l:'Version history'}];
+    $('nav-super').innerHTML='<button class="nav-btn sup-head '+(open?'open':'')+'" onclick="toggleSuper()"><span class="chev">'+(open?'▾':'▸')+'</span><span class="label">Super Admin</span>'+(!open&&pend?'<span class="count">'+pend+'</span>':'')+'</button>'+
+      (open?'<div class="adm-body sup">'+t.map(x=>'<button class="nav-btn sub '+(S.tab===x.k?'active':'')+'" onclick="go(\''+x.k+'\')"><span class="label">'+x.l+'</span>'+(x.c?'<span class="count">'+x.c+'</span>':'')+'</button>').join('')+'</div>':'');
+  } else $('nav-super').innerHTML='';
+}
+function ctxBar(){return ''}
+
+/* ─── entry cards ─── */
+function driveId(u){
+  const m=String(u).match(/\/d\/([-\w]{20,})/)||String(u).match(/[?&]id=([-\w]{20,})/);
+  return m?m[1]:'';
+}
+function driveThumb(id,w){return 'https://drive.google.com/thumbnail?id='+id+'&sz=w'+(w||400)}
+function gallery(e){
+  if(!e.media||!e.media.length)return '';
+  return '<div class="gal">'+e.media.map((m,i)=>{
+    const id=m.id||driveId(m.u);
+    const vid=m.t==='video';
+    return '<span class="thumb" onclick="drivePreview(\''+esc(id)+'\',event)" title="'+esc(m.n||'Attachment')+'">'+
+      (id?'<img src="'+driveThumb(id,400)+'" alt="'+esc(m.n||'')+'" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'nothumb\',textContent:\'No preview\'}))">'
+         :'<div class="nothumb">Invalid link</div>')+
+      (vid?'<span class="playbtn">▶</span>':'')+'</span>';
+  }).join('')+'</div>';
+}
+function drivePreview(id,ev){
+  if(ev)ev.stopPropagation();
+  if(!id){toast('That link has no Drive file ID');return}
+  $('lb').innerHTML='<div class="lightbox" onclick="if(event.target===this)this.remove()">'+
+    '<div style="width:min(900px,92vw);height:min(620px,80vh);background:#000;border-radius:12px;overflow:hidden;position:relative">'+
+    '<iframe src="https://drive.google.com/file/d/'+id+'/preview" style="width:100%;height:100%;border:0" allow="autoplay"></iframe></div>'+
+    '<div style="position:absolute;bottom:26px;color:#fff;font-size:12px;opacity:.75">If this stays blank, the file is not shared with you in Drive</div></div>';
+}
+function audBadge(e){return e.aud==='all'?'<span class="badge" style="background:#EAF1FE;color:#0053DE">All BPOs</span>':'<span class="badge" style="background:#F3F4F6;color:#6B7280">'+esc(e.aud)+' only</span>'}
+function entryCard(e){
+  const done=mine().has(e.id),M=MODULES[e.m];
+  return '<div class="entry '+(done?'done':'')+'" style="cursor:pointer" onclick="openCard(\''+e.id+'\')">'+
+    '<div class="entry-meta">'+
+      '<span class="badge" style="background:'+M.bg+';color:'+M.color+'">'+M.name+'</span>'+
+      '<span class="eid">'+rid(e)+'</span>'+
+      (e.tag?'<span class="badge" style="background:#F3F4F6;color:#6B7280">'+esc(e.tag)+'</span>':'')+
+      (multiBpo()?audBadge(e):'')+
+      '<span style="font-size:11.5px;color:#9CA3AF">'+fmt(e.date)+' · '+esc(e.by)+'</span>'+
+      (done?'<span class="badge" style="background:#ECFDF5;color:#059669;margin-left:auto">Acknowledged</span>':'')+
+    '</div>'+
+    '<div class="entry-title">'+esc(e.title)+'</div>'+
+    '<div class="entry-body" style="max-height:44px;overflow:hidden">'+esc(e.body)+'</div>'+
+    '<div class="entry-actions">'+
+      (done?'<button class="btn btn-done">Acknowledged</button>':'<button class="btn btn-primary" onclick="ack(\''+e.id+'\',event)">Acknowledge</button>')+
+      '<button class="btn btn-outline" onclick="event.stopPropagation();openCard(\''+e.id+'\')">Open</button>'+
+      (e.media&&e.media.length?'<span style="font-size:11.5px;color:#9CA3AF">'+e.media.length+' attachment'+(e.media.length>1?'s':'')+'</span>':'')+
+    '</div></div>';
+}
+function searchBar(ph){
+  const mods=[['all','All'],['HU','Huddle'],['CA','QA'],['PU','Policy']];
+  return '<div class="card" style="padding:16px 18px"><input class="inp" id="sq" placeholder="'+ph+'" value="'+esc(S.q)+'" oninput="setQ(this.value)" style="margin-bottom:11px">'+
+  '<div style="display:flex;gap:7px;flex-wrap:wrap">'+mods.map(m=>'<button class="chip '+(S.filter===m[0]?'on':'')+'" onclick="setFilter(\''+m[0]+'\')">'+m[1]+'</button>').join('')+'</div></div>';
+}
+function filtered(l){
+  let r=l;
+  if(S.filter!=='all')r=r.filter(e=>e.m===S.filter);
+  if(S.q)r=r.filter(e=>(rid(e)+' '+e.title+' '+e.body+' '+(e.cat||'')).toLowerCase().includes(S.q));
+  return r;
+}
+function rHome(){
+  const p=pending(),total=live().length,d=live().filter(e=>mine().has(e.id)).length;
+  const peers=scopeAgents();
+  const teamDone=peers.reduce((s,a)=>s+forBpo(a.o).filter(e=>ACKS[a.e]&&ACKS[a.e].has(e.id)).length,0);
+  const teamTot=peers.reduce((s,a)=>s+forBpo(a.o).length,0);
+  let h=ctxBar()+'<div class="pg-title">'+(p.length?p.length+' update'+(p.length>1?'s':'')+' need your acknowledgement':'You are all caught up')+'</div>'+
+  '<div class="pg-sub">'+esc(S.me)+' · '+esc(viewLabel())+'</div>'+
+  '<div class="stat-grid">'+
+    '<div class="card"><div class="stat-label">Pending for you</div><div class="stat-val" style="color:'+(p.length?'#EE4D2D':'#059669')+'">'+p.length+'</div><div class="stat-note">of '+total+' visible entries</div></div>'+
+    '<div class="card"><div class="stat-label">Your completion</div><div class="stat-val">'+pct(d,total)+'%</div><div class="bar" style="margin-top:9px"><div class="bar-fill" style="width:'+pct(d,total)+'%"></div></div></div>'+
+    '<div class="card"><div class="stat-label">Scope completion</div><div class="stat-val">'+pct(teamDone,teamTot)+'%</div><div class="stat-note">'+peers.length+' agents in scope</div></div>'+
+    '<div class="card"><div class="stat-label">Latest update</div><div class="stat-val" style="font-size:19px">'+(live()[0]?fmt(live()[0].date):'—')+'</div><div class="stat-note">'+(live()[0]?MODULES[live()[0].m].name.toLowerCase():'nothing published')+'</div></div>'+
+  '</div>'+searchBar('Search POD, refund, size chart, seller dispute…');
+  const l=filtered(p);
+  return h+(l.length?l.map(entryCard).join(''):'<div class="card empty"><div class="empty-t">'+(S.q?'No match':'Nothing pending')+'</div><div style="font-size:13px">'+(S.q?'Try a different word.':'Every update in scope has your acknowledgement.')+'</div></div>');
+}
+function rModule(k){
+  const M=MODULES[k],l=live().filter(e=>e.m===k);
+  let h=ctxBar()+'<div class="pg-title">'+M.name+'</div><div class="pg-sub">Owned by '+M.owner+' · '+(M.shared?'shared across all BPOs':'scoped to '+esc(viewLabel()))+' · '+l.length+' entries</div>';
+  if(!l.length)return h+'<div class="card empty"><div class="empty-t">No entries yet</div><div style="font-size:13px">When '+M.owner+' publishes the first one it appears here.</div></div>';
+  h+='<div class="card" style="padding:16px 18px"><input class="inp" id="sq" placeholder="Search within '+M.name.toLowerCase()+'…" value="'+esc(S.q)+'" oninput="setQ(this.value)"></div>';
+  const r=S.q?l.filter(e=>(rid(e)+' '+e.title+' '+e.body).toLowerCase().includes(S.q)):l;
+  return h+(r.length?r.map(entryCard).join(''):'<div class="card empty"><div class="empty-t">No match</div></div>');
+}
+function rDone(){
+  const l=live().filter(e=>mine().has(e.id));
+  return ctxBar()+'<div class="pg-title">My acknowledgement</div><div class="pg-sub">'+l.length+' of '+live().length+' entries · your personal record</div>'+
+    (l.length?l.map(entryCard).join(''):'<div class="card empty"><div class="empty-t">Nothing acknowledged yet</div></div>');
+}
+
+/* ─── entry editor ─── */
+const PFX={'Vads':'VD','ePerformax':'EP','Asia Recruit':'AR','all':'SH'};
+function nextRef(m,aud){
+  const n=ENTRIES.filter(e=>e.m===m&&e.aud===aud).map(e=>parseInt(String(rid(e)).split('-')[1],10)).filter(x=>!isNaN(x));
+  return m+'-'+((n.length?Math.max.apply(null,n):0)+1);
+}
+function nextId(m,aud){return (PFX[aud]||'X')+'-'+nextRef(m,aud)}
+function audOptions(){const b=me().bpos;return (b.length>1?['all']:[]).concat(b)}
+function openEditor(id){
+  const o=audOptions();
+  const def={id:'',m:'PU',aud:o[0],date:new Date().toISOString().slice(0,10),title:'',cat:'',tag:'',body:'',by:me().n,link:'',st:'draft',media:[]};
+  const base=id?ENTRIES.find(e=>e.id===id):def;
+  S.edit=JSON.parse(JSON.stringify(base));S.orig=JSON.parse(JSON.stringify(base));S.editNew=!id;S.err='';S.tab='manage';renderMain();
+}
+function closeEditor(){S.edit=null;S.orig=null;S.err='';renderMain()}
+function revertEditor(){S.edit=JSON.parse(JSON.stringify(S.orig));S.err='';renderMain();toast('Changes reverted')}
+function dirty(){return JSON.stringify(S.edit)!==JSON.stringify(S.orig)}
+function syncDirty(){
+  const b=$('undoBtn'),g=$('dirtyBadge');
+  if(b)b.disabled=!dirty();
+  if(g)g.style.display=dirty()?'inline-block':'none';
+}
+function fld(k,v){
+  S.edit[k]=v;
+  if(k==='m'){const n=$('autoId');if(n)n.textContent=nextRef(v,S.edit.aud);syncDirty();return}
+  if(S.err){S.err='';const w=$('fErr');if(w)w.style.display='none'}
+  syncDirty();
+}
+function addDriveLink(){
+  const u=($('dlink').value||'').trim(), t=$('dtype').value, lbl=($('dlabel').value||'').trim();
+  if(!u){toast('Paste a Google Drive share link');return}
+  const id=driveId(u);
+  if(!id){toast('That does not look like a Drive file link — use the Share > Copy link URL');return}
+  if(S.edit.media.some(m=>(m.id||driveId(m.u))===id)){toast('That file is already attached');return}
+  const imgs=S.edit.media.filter(m=>m.t==='image').length;
+  if(t==='image'&&imgs>=5){toast('Five images is the limit');return}
+  S.edit.media.push({t:t,u:u,id:id,n:lbl||(t==='video'?'Recording':'Screenshot')});
+  $('dlink').value='';$('dlabel').value='';
+  renderMain();
+}
+function delMedia(i){S.edit.media.splice(i,1);renderMain()}
+function editor(){
+  const d=S.edit,imgs=d.media.filter(m=>m.t==='image').length,o=audOptions();
+  return '<div class="card" style="border-color:#EE4D2D;border-width:1.5px">'+
+  '<div style="display:flex;align-items:center;gap:9px;margin-bottom:16px"><div style="font-family:Nunito;font-weight:900;font-size:17px">'+(S.editNew?'New entry':'Edit entry')+'</div>'+
+  '<span class="badge" id="dirtyBadge" style="background:#FFFBEB;color:#B45309;display:'+(dirty()?'inline-block':'none')+'">Unsaved changes</span>'+
+  '<button class="btn btn-outline btn-xs" id="undoBtn" style="margin-left:auto" onclick="revertEditor()"'+(dirty()?'':' disabled')+'>Undo changes</button>'+
+  '<button class="btn btn-outline btn-xs" onclick="closeEditor()">Close</button></div>'+
+  '<div id="fErr" style="background:#FEF2F2;color:#B91C1C;font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:14px;display:'+(S.err?'block':'none')+'">'+esc(S.err)+'</div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px">'+
+    '<div><label class="flab">Module</label><select class="inp" onchange="fld(\'m\',this.value)"'+(S.editNew?'':' disabled')+'>'+Object.keys(MODULES).map(k=>'<option value="'+k+'"'+(d.m===k?' selected':'')+'>'+MODULES[k].name+'</option>').join('')+'</select></div>'+
+    '<div><label class="flab">Entry ID</label><div class="inp" style="background:#F9FAFB;color:#6B7280;font-family:monospace;display:flex;align-items:center"><span id="autoId">'+esc(S.editNew?nextRef(d.m,d.aud):rid(d))+'</span><span style="margin-left:auto;font-size:10px;font-family:Nunito;font-weight:800;color:#9CA3AF">AUTO</span></div></div>'+
+    '<div><label class="flab">Audience</label><select class="inp" onchange="fld(\'aud\',this.value)"'+(o.length>1?'':' disabled')+'>'+o.map(x=>'<option value="'+x+'"'+(d.aud===x?' selected':'')+'>'+(x==='all'?'All BPOs':x+' only')+'</option>').join('')+'</select></div>'+
+    '<div><label class="flab">Date</label><input class="inp" type="date" value="'+esc(d.date)+'" oninput="fld(\'date\',this.value)"></div>'+
+  '</div>'+
+  '<div style="margin-bottom:12px"><label class="flab">Title</label><input class="inp" id="f_title" value="'+esc(d.title)+'" oninput="fld(\'title\',this.value)"></div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'+
+    '<div><label class="flab">Category path</label><input class="inp" id="f_cat" value="'+esc(d.cat)+'" oninput="fld(\'cat\',this.value)"></div>'+
+    '<div><label class="flab">Tagging</label><input class="inp" id="f_tag" value="'+esc(d.tag)+'" oninput="fld(\'tag\',this.value)"></div>'+
+  '</div>'+
+  '<div style="margin-bottom:14px"><label class="flab">Summary shown to agents</label><textarea class="inp" id="f_body" rows="4" style="resize:vertical;font-family:inherit" oninput="fld(\'body\',this.value)">'+esc(d.body)+'</textarea></div>'+
+  '<div style="margin-bottom:14px"><label class="flab">Attachments from Google Drive — '+imgs+' of 5 images'+(d.media.some(m=>m.t==='video')?' + video':'')+'</label>'+
+    (d.media.length?'<div class="gal" style="margin-bottom:10px">'+d.media.map((m,i)=>{
+      const id=m.id||driveId(m.u);
+      return '<span class="thumb">'+(id?'<img src="'+driveThumb(id,300)+'" alt="">':'<div class="nothumb">Invalid</div>')+
+        (m.t==='video'?'<span class="playbtn">▶</span>':'')+
+        '<button class="x" onclick="delMedia('+i+')">×</button></span>';
+    }).join('')+'</div>':'')+
+    '<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">'+
+      '<div style="flex:1;min-width:240px"><input class="inp" id="dlink" placeholder="Paste the Drive share link — https://drive.google.com/file/d/…"></div>'+
+      '<div style="width:130px"><input class="inp" id="dlabel" placeholder="Label"></div>'+
+      '<div style="width:110px"><select class="inp" id="dtype"><option value="image">Image</option><option value="video">Video</option></select></div>'+
+      '<button class="btn btn-outline" onclick="addDriveLink()">Attach</button>'+
+    '</div>'+
+    '<div style="font-size:11.5px;color:#9CA3AF;margin-top:7px;line-height:1.55">Upload the file into the shared repository Drive folder first, then paste its link here. Agents only see it if the folder is shared with them.</div></div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">'+
+    '<div><label class="flab">Reference link</label><input class="inp" id="f_link" value="'+esc(d.link)+'" oninput="fld(\'link\',this.value)"></div>'+
+    '<div><label class="flab">Shared by</label><input class="inp" id="f_by" value="'+esc(d.by)+'" oninput="fld(\'by\',this.value)"></div>'+
+  '</div>'+
+  '<div style="display:flex;gap:9px;align-items:center;border-top:1px solid #F3F4F6;padding-top:16px">'+
+    '<button class="btn btn-primary" onclick="saveEntry(true)">Publish</button>'+
+    '<button class="btn btn-outline" onclick="saveEntry(false)">Save as draft</button>'+
+    '<span style="font-size:12px;color:#9CA3AF;margin-left:auto">Your name is recorded against every publish.</span>'+
+  '</div></div>';
+}
+function saveEntry(publish){
+  const d=S.edit;
+  if(!d.title.trim()||!d.body.trim()||!d.date){S.err='Title, summary and date are all required.';renderMain();return}
+  snap();
+  const wasNew=S.editNew;
+  d.st=publish?'pub':'draft';d.pb=S.me;d.pa=new Date().toISOString().slice(0,16);
+  if(wasNew){d.ref=nextRef(d.m,d.aud);d.id=nextId(d.m,d.aud);ENTRIES.unshift(d)}else{ENTRIES[ENTRIES.findIndex(e=>e.id===d.id)]=d}
+  logEv(publish?(wasNew?'publish':'edit'):'draft',d.id,d.aud);
+  S.edit=null;S.orig=null;
+  toast((publish?'Published ':'Saved ')+rid(d)+(publish?' to '+(d.aud==='all'?'all BPOs':d.aud):' as draft'),true);render();
+}
+function unpublish(id){snap();const e=ENTRIES.find(x=>x.id===id);e.st='draft';e.pb=S.me;e.pa=new Date().toISOString().slice(0,16);logEv('unpublish',id,e.aud);toast('Unpublished',true);render()}
+function publishNow(id){snap();const e=ENTRIES.find(x=>x.id===id);e.st='pub';e.pb=S.me;e.pa=new Date().toISOString().slice(0,16);logEv('publish',id,e.aud);toast('Published '+id,true);render()}
+function delEntry(id){
+  const n=PEOPLE.filter(a=>ACKS[a.e]&&ACKS[a.e].has(id)).length;
+  if(!confirm('Delete this entry?\n\n'+n+' acknowledgement(s) go with it.'))return;
+  const e=ENTRIES.find(x=>x.id===id);
+  snap();logEv('delete',id,e.aud);
+  ENTRIES.splice(ENTRIES.findIndex(x=>x.id===id),1);PEOPLE.forEach(a=>{if(ACKS[a.e])ACKS[a.e].delete(id)});
+  toast('Entry deleted',true);render();
+}
+function rManage(){
+  const scope=ENTRIES.filter(inScope);
+  let h=ctxBar()+'<div style="display:flex;align-items:flex-end;margin-bottom:20px"><div><div class="pg-title">Manage entries</div>'+
+    '<div class="pg-sub" style="margin:0">'+scope.filter(e=>e.st==='pub').length+' published · '+scope.filter(e=>e.st==='draft').length+' drafts · '+esc(viewLabel())+'</div></div>'+
+    (S.edit?'':'<button class="btn btn-primary" style="margin-left:auto" onclick="openEditor()">New entry</button>')+'</div>';
+  if(S.edit)h+=editor();
+  const rows=scope.slice().sort((a,b)=>(a.st===b.st?0:a.st==='draft'?-1:1)||b.date.localeCompare(a.date));
+  h+='<div class="card" style="padding:8px 0">';
+  rows.forEach(e=>{
+    const M=MODULES[e.m],pub=e.st==='pub';
+    const pool=PEOPLE.filter(a=>a.r==='Agent'&&(e.aud==='all'?a.o!==IH:a.o===e.aud));
+    const n=pool.filter(a=>ACKS[a.e]&&ACKS[a.e].has(e.id)).length;
+    const canEdit=me().bpos.indexOf(e.aud)>=0||(e.aud==='all'&&multiBpo());
+    h+='<div class="mrow"><div style="min-width:0;flex:1;cursor:pointer" onclick="openCard(\''+e.id+'\')">'+
+      '<div class="entry-meta" style="margin-bottom:5px">'+
+        '<span class="badge" style="background:'+M.bg+';color:'+M.color+'">'+M.name+'</span>'+
+        '<span class="eid">'+rid(e)+'</span>'+audBadge(e)+
+        '<span class="badge" style="background:'+(pub?'#ECFDF5':'#FFFBEB')+';color:'+(pub?'#059669':'#B45309')+'">'+(pub?'Published':'Draft')+'</span>'+
+        '<span style="font-size:11.5px;color:#9CA3AF">'+fmt(e.date)+'</span></div>'+
+      '<div style="font-family:Nunito;font-weight:700;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(e.title)+'</div>'+
+      '<div style="font-size:11.5px;color:#9CA3AF;margin-top:3px">'+(pub?n+' of '+pool.length+' acknowledged':'Not visible to agents')+' · by '+esc(nameOf(e.pb))+'</div>'+
+    '</div><div style="display:flex;gap:6px;flex-shrink:0">'+
+      (canEdit?'<button class="btn btn-outline btn-xs" onclick="openEditor(\''+e.id+'\')">Edit</button>'+
+      (pub?'<button class="btn btn-outline btn-xs" onclick="unpublish(\''+e.id+'\')">Unpublish</button>':'<button class="btn btn-primary btn-xs" onclick="publishNow(\''+e.id+'\')">Publish</button>')+
+      '<button class="btn btn-xs btn-del" onclick="delEntry(\''+e.id+'\')">Delete</button>'
+      :'<span style="font-size:11px;color:#9CA3AF;font-family:Nunito;font-weight:700">Read only</span>')+
+    '</div></div>';
+  });
+  return h+'</div>';
+}
+
+/* ─── coverage and chase ─── */
+function rAdmin(){
+  const peers=scopeAgents(),list=live();
+  let h=ctxBar()+'<div class="pg-title">Acknowledgement coverage</div><div class="pg-sub">'+esc(viewLabel())+' only</div>';
+  const done=peers.reduce((s,a)=>s+forBpo(a.o).filter(e=>ACKS[a.e]&&ACKS[a.e].has(e.id)).length,0);
+  const tot=peers.reduce((s,a)=>s+forBpo(a.o).length,0);
+  const behind=peers.filter(a=>forBpo(a.o).filter(e=>ACKS[a.e]&&ACKS[a.e].has(e.id)).length<forBpo(a.o).length).length;
+  h+='<div class="stat-grid">'+
+    '<div class="card"><div class="stat-label">Completion</div><div class="stat-val">'+pct(done,tot)+'%</div><div class="stat-note">'+done+' of '+tot+' required</div></div>'+
+    '<div class="card"><div class="stat-label">Agents behind</div><div class="stat-val" style="color:#EE4D2D">'+behind+'</div><div class="stat-note">of '+peers.length+' agents</div></div>'+
+    '<div class="card"><div class="stat-label">Entries in scope</div><div class="stat-val">'+list.length+'</div><div class="stat-note">'+list.filter(e=>e.aud==='all').length+' shared · '+list.filter(e=>e.aud!=='all').length+' BPO-only</div></div>'+
+    '<div class="card"><div class="stat-label">Open questions</div><div class="stat-val">'+QUESTIONS.filter(q=>{const e=ENTRIES.find(x=>x.id===q.id);return e&&inScope(e)}).length+'</div><div class="stat-note">awaiting reply</div></div>'+
+  '</div>';
+  const multi=scopeList().length>1;
+  h+='<div class="card" style="overflow-x:auto"><table class="mtx"><thead><tr><th class="who">Agent</th>'+(multi?'<th>BPO</th>':'')+list.map(e=>'<th title="'+esc(e.title)+'">'+rid(e).replace('-','')+'</th>').join('')+'<th>%</th></tr></thead><tbody>';
+  peers.forEach(a=>{
+    const own=forBpo(a.o),n=own.filter(e=>ACKS[a.e]&&ACKS[a.e].has(e.id)).length;
+    h+='<tr><td class="who">'+esc(a.n)+'</td>'+(multi?'<td style="font-size:11px;color:#9CA3AF">'+esc(a.o)+'</td>':'')+
+      list.map(e=>own.indexOf(e)<0?'<td><span style="color:#E5E7EB">–</span></td>':'<td><span class="dot '+(ACKS[a.e].has(e.id)?'y':'n')+'">'+(ACKS[a.e].has(e.id)?'✓':'·')+'</span></td>').join('')+
+      '<td style="font-family:Nunito;font-weight:800;font-size:12px;color:'+(n===own.length?'#059669':'#EE4D2D')+'">'+pct(n,own.length)+'</td></tr>';
+  });
+  return h+'</tbody></table></div>';
+}
+function rChase(){
+  const peers=scopeAgents();
+  let h=ctxBar()+'<div class="pg-title">Chase list</div><div class="pg-sub">Who to nudge in '+esc(viewLabel())+'</div>';
+  const rows=peers.map(a=>({a:a,miss:forBpo(a.o).filter(e=>!(ACKS[a.e]&&ACKS[a.e].has(e.id)))})).filter(r=>r.miss.length).sort((x,y)=>y.miss.length-x.miss.length);
+  if(!rows.length)return h+'<div class="card empty"><div class="empty-t">Everyone is up to date</div></div>';
+  h+='<div class="card" style="padding:16px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="font-size:13px;color:#6B7280">'+rows.length+' agents have outstanding items.</span><button class="btn btn-primary" style="margin-left:auto" onclick="go(\'reminders\')">Open Nudge</button></div>';
+  rows.forEach(r=>{
+    h+='<div class="card card-hover" style="padding:17px 20px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">'+
+    '<div style="width:33px;height:33px;border-radius:50%;background:#FFF1ED;color:#EE4D2D;display:flex;align-items:center;justify-content:center;font-family:Nunito;font-weight:900;font-size:12px">'+esc(r.a.n.split(' ').map(x=>x[0]).join(''))+'</div>'+
+    '<div style="flex:1"><div style="font-family:Nunito;font-weight:800;font-size:14px">'+esc(r.a.n)+'</div><div style="font-size:11.5px;color:#9CA3AF">'+esc(r.a.o)+' · '+esc(r.a.e)+'</div></div>'+
+    '<span class="badge" style="background:#FEF2F2;color:#DC2626">'+r.miss.length+' outstanding</span></div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">'+r.miss.map(e=>'<span class="badge" style="background:'+MODULES[e.m].bg+';color:'+MODULES[e.m].color+';cursor:pointer" onclick="openCard(\''+e.id+'\')" title="'+esc(e.title)+'">'+rid(e)+'</span>').join('')+'</div></div>';
+  });
+  return h;
+}
+
+/* ─── traffic (WJ pattern) ─── */
+function tfEvents(all){
+  const s=scopeList();
+  let evs=EVENTS.filter(v=>{
+    if(all)return true;
+    const p=findPerson(v.w);
+    return p&&p.bpos.some(b=>s.indexOf(b)>=0);
+  });
+  if(S.tfUser)evs=evs.filter(v=>v.w===S.tfUser);
+  return evs;
+}
+function tfChart(evs){
+  const days=[],byDay={},whoByDay={};
+  for(let i=13;i>=0;i--)days.push(dayKey(new Date(LASTEV.getTime()-i*864e5)));
+  evs.filter(v=>v.k!=='publish'&&v.k!=='edit'&&v.k!=='draft'&&v.k!=='delete').forEach(v=>{
+    const d=dayKey(new Date(v.t));
+    if(!byDay[d])byDay[d]={views:0,who:{}};
+    if(v.k==='view'||v.k==='ack')byDay[d].views++;
+    byDay[d].who[v.w]=(byDay[d].who[v.w]||0)+1;
+  });
+  const today=dayKey(LASTEV);
+  const mx=Math.max.apply(null,days.map(d=>(byDay[d]||{views:0}).views).concat([1]));
+  return '<div style="display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:6px">'+days.map(d=>{
+    const b=byDay[d]||{views:0,who:{}};
+    const names=Object.keys(b.who).sort((x,y)=>b.who[y]-b.who[x]).map(w=>nameOf(w)+(b.who[w]>1?' ('+b.who[w]+')':''));
+    const lbl=new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    const isT=d===today;
+    return '<div class="tf-bar">'+
+      '<div class="tf-tip"><div style="font-weight:800;margin-bottom:4px">'+lbl+' · '+b.views+' action'+(b.views===1?'':'s')+'</div>'+
+      '<div style="color:#D1D5DB">'+(names.length?esc(names.join(', ')):'No activity')+'</div><div class="ar"></div></div>'+
+      '<div style="font-size:11px;font-weight:800;color:'+(b.views?(isT?'#EE4D2D':'#6B7280'):'#D1D5DB')+'">'+(b.views||'')+'</div>'+
+      '<div style="width:100%;display:flex;align-items:flex-end;height:92px"><div style="width:100%;height:'+Math.max(Math.round(b.views/mx*100),b.views?4:0)+'%;background:'+(isT?'#EE4D2D':'#FFC5B4')+';border-radius:5px 5px 0 0;min-height:'+(b.views?3:0)+'px"></div></div>'+
+      '<div style="font-size:9.5px;font-weight:'+(isT?800:600)+';color:'+(isT?'#EE4D2D':'#9CA3AF')+';white-space:nowrap">'+d.slice(8)+'/'+d.slice(5,7)+(isT?'<br>TODAY':'')+'</div></div>';
+  }).join('')+'</div>';
+}
+function tfHours(evs){
+  const byH=Array(24).fill(0);
+  evs.filter(v=>v.k==='view'||v.k==='ack').forEach(v=>byH[new Date(v.t).getHours()]++);
+  const mx=Math.max.apply(null,byH.concat([1]));
+  return '<div style="display:flex;gap:3px">'+byH.map((c,h)=>{
+    const p=Math.round(c/mx*100);
+    const bg=c===0?'#F3F4F6':p>75?'#D6431F':p>50?'#EE4D2D':p>25?'#FFA48C':'#FFE0D7';
+    const tc=c===0?'#D1D5DB':p>50?'#fff':'#8A2B14';
+    return '<div class="heat"><div class="tf-tip"><div style="font-weight:800">'+String(h).padStart(2,'0')+':00 — '+String(h).padStart(2,'0')+':59</div><div style="color:#D1D5DB">'+c+' action'+(c===1?'':'s')+'</div><div class="ar"></div></div>'+
+      '<div style="width:100%;height:30px;border-radius:5px;background:'+bg+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:'+tc+'">'+(c||'')+'</div>'+
+      '<div style="font-size:8px;color:#9CA3AF;min-height:10px">'+(h%3===0?String(h).padStart(2,'0'):'')+'</div></div>';
+  }).join('')+'</div>';
+}
+function tfDow(evs){
+  const L=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],byD=Array(7).fill(0);
+  evs.filter(v=>v.k==='view'||v.k==='ack').forEach(v=>byD[new Date(v.t).getDay()]++);
+  const mx=Math.max.apply(null,byD.concat([1]));
+  return '<div style="display:flex;gap:8px;align-items:flex-end;height:96px">'+byD.map((c,i)=>
+    '<div class="tf-bar"><div class="tf-tip"><div style="font-weight:800">'+L[i]+'</div><div style="color:#D1D5DB">'+c+' views all-time</div><div class="ar"></div></div>'+
+    '<div style="font-size:11px;font-weight:800;color:'+(c?'#26AA99':'#D1D5DB')+'">'+(c||'')+'</div>'+
+    '<div style="width:100%;height:52px;display:flex;align-items:flex-end"><div style="width:100%;height:'+Math.max(Math.round(c/mx*100),c?5:0)+'%;background:'+(c?'#26AA99':'#F3F4F6')+';border-radius:5px 5px 0 0"></div></div>'+
+    '<div style="font-size:11px;color:#6B7280;font-weight:700">'+L[i]+'</div></div>').join('')+'</div>';
+}
+function tfPodium(){
+  const tot={};
+  BPOS.forEach(b=>tot[b]=0);
+  EVENTS.filter(v=>v.k==='view'||v.k==='ack').forEach(v=>{const p=findPerson(v.w);if(p&&tot[p.o]!==undefined)tot[p.o]++});
+  const rank=BPOS.map(b=>({b:b,n:tot[b]})).sort((x,y)=>y.n-x.n);
+  const order=[1,0,2],hts={0:110,1:80,2:58},md={0:'🥇',1:'🥈',2:'🥉'},col={0:'#EE4D2D',1:'#0053DE',2:'#26AA99'};
+  return '<div style="display:flex;align-items:flex-end;gap:12px;min-height:170px;padding-top:8px">'+
+    order.filter(i=>rank[i]).map(i=>'<div class="pod">'+
+      '<div style="font-size:24px;line-height:1">'+md[i]+'</div>'+
+      '<div style="font-size:12px;font-weight:800;font-family:Nunito;margin:4px 0 2px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">'+esc(rank[i].b)+'</div>'+
+      '<div style="font-size:20px;font-weight:900;font-family:Nunito;color:'+col[i]+';margin-bottom:6px">'+rank[i].n+'</div>'+
+      '<div class="stand" style="height:'+hts[i]+'px;background:linear-gradient(180deg,'+col[i]+','+col[i]+'bb)"><span style="font-size:15px;font-weight:900;color:#fff;opacity:.85;font-family:Nunito">'+(i+1)+'</span></div></div>').join('')+'</div>';
+}
+function setTfUser(v){S.tfUser=v;renderMain()}
+function setTfSort(v){S.tfSort=v;renderMain()}
+function tfTable(evs,peers){
+  const today=dayKey(NOW),by={};
+  peers.forEach(a=>{by[a.e]={p:a,total:0,today:0,last:0}});
+  evs.forEach(v=>{
+    if(!by[v.w])return;
+    if(v.k==='view'||v.k==='ack'){by[v.w].total++;if(dayKey(new Date(v.t))===today)by[v.w].today++}
+    if(v.t>by[v.w].last)by[v.w].last=v.t;
+  });
+  const parts=S.tfSort.split('-'),key=parts[0],dir=parts[1]==='asc'?1:-1;
+  const rows=Object.keys(by).map(k=>by[k]).sort((a,b)=>{
+    let r=0;
+    if(key==='name')r=a.p.n.localeCompare(b.p.n);
+    else if(key==='bpo')r=a.p.o.localeCompare(b.p.o);
+    else if(key==='today')r=a.today-b.today;
+    else if(key==='last')r=a.last-b.last;
+    else r=a.total-b.total;
+    return r*dir;
+  });
+  const th=(k,l)=>{
+    const on=key===k,nd=on&&dir===-1?'asc':'desc';
+    return '<th class="srt" onclick="setTfSort(\''+k+'-'+nd+'\')" style="'+(on?'color:#EE4D2D':'')+'">'+l+(on?(dir===-1?' ▼':' ▲'):'')+'</th>';
+  };
+  return '<table class="ptab"><thead><tr>'+th('name','Agent')+th('bpo','BPO')+th('total','Actions')+th('today','Today')+th('last','Last seen')+'</tr></thead><tbody>'+
+    rows.map(r=>'<tr><td style="font-weight:500">'+esc(r.p.n)+'</td><td style="font-size:11.5px;color:#6B7280">'+esc(r.p.o)+'</td>'+
+      '<td><span class="badge" style="background:'+(r.total?'#FFF1ED':'#FEF2F2')+';color:'+(r.total?'#EE4D2D':'#DC2626')+'">'+r.total+'</span></td>'+
+      '<td style="font-size:12px">'+(r.today||'—')+'</td>'+
+      '<td style="font-size:11.5px;color:#6B7280">'+(r.last?fmtT(r.last):'never')+'</td></tr>').join('')+
+    '</tbody></table>';
+}
+function rTraffic(all){
+  const evs=tfEvents(all),peers=all?PEOPLE.filter(p=>p.r==='Agent'):scopeAgents();
+  const views=evs.filter(v=>v.k==='view'||v.k==='ack');
+  const today=dayKey(LASTEV);
+  const tdy=views.filter(v=>dayKey(new Date(v.t))===today).length;
+  const wk=views.filter(v=>v.t>LASTEV.getTime()-7*864e5).length;
+  const byDay={};views.forEach(v=>{const d=dayKey(new Date(v.t));byDay[d]=(byDay[d]||0)+1});
+  const peak=Object.keys(byDay).sort((a,b)=>byDay[b]-byDay[a])[0];
+  const users=[''].concat(peers.map(p=>p.e));
+  let h='<div class="card" style="padding:14px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
+    '<span style="font-size:12px;font-weight:800;font-family:Nunito;color:#6B7280">Filter</span>'+
+    '<select class="inp" style="width:auto;min-width:200px" onchange="setTfUser(this.value)">'+
+      users.map(u=>'<option value="'+u+'"'+(S.tfUser===u?' selected':'')+'>'+(u?esc(nameOf(u)):'All agents')+'</option>').join('')+'</select>'+
+    (S.tfUser?'<button class="btn btn-outline btn-xs" onclick="setTfUser(\'\')">Clear</button>':'')+
+    '<span style="font-size:11.5px;color:#9CA3AF;margin-left:auto">Hover any bar or cell for detail</span></div>';
+  h+='<div class="stat-grid">'+
+    '<div class="card"><div class="stat-label">Total actions</div><div class="stat-val">'+views.length+'</div><div class="stat-note">all time</div></div>'+
+    '<div class="card"><div class="stat-label">Today</div><div class="stat-val" style="color:#EE4D2D">'+tdy+'</div><div class="stat-note">'+new Set(views.filter(v=>dayKey(new Date(v.t))===today).map(v=>v.w)).size+' agents</div></div>'+
+    '<div class="card"><div class="stat-label">Last 7 days</div><div class="stat-val">'+wk+'</div><div class="stat-note">'+new Set(evs.filter(v=>v.t>LASTEV.getTime()-7*864e5).map(v=>v.w)).size+' active</div></div>'+
+    '<div class="card"><div class="stat-label">Peak day</div><div class="stat-val" style="font-size:19px">'+(peak?fmt(peak):'—')+'</div><div class="stat-note">'+(peak?byDay[peak]+' views':'no data')+'</div></div>'+
+  '</div>';
+  h+='<div class="card"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:2px">Last 14 days</div><div style="font-size:12px;color:#9CA3AF;margin-bottom:4px">Acknowledgement activity from the trackers. Hover a bar to see who.</div>'+tfChart(evs)+'</div>';
+  h+='<div style="display:grid;grid-template-columns:1.6fr 1fr;gap:14px">'+
+    '<div class="card"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:10px">Hour of day</div>'+tfHours(evs)+'</div>'+
+    '<div class="card"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:10px">Day of week</div>'+tfDow(evs)+'</div></div>';
+  if(all)h+='<div class="card"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:2px">BPO podium</div><div style="font-size:12px;color:#9CA3AF">Total views all-time, ignores the filter above</div>'+tfPodium()+'</div>';
+  const cnt={};views.forEach(v=>{cnt[v.id]=(cnt[v.id]||0)+1});
+  const top=Object.keys(cnt).map(id=>({id:id,n:cnt[id],e:ENTRIES.find(x=>x.id===id)})).filter(x=>x.e).sort((a,b)=>b.n-a.n).slice(0,6);
+  const mx=top.length?top[0].n:1;
+  h+='<div class="card"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:10px">Most acknowledged entries</div>'+
+    (top.length?top.map((t,i)=>'<div class="rank"><span class="n">'+(i+1)+'</span><div style="flex:1;min-width:0;cursor:pointer" onclick="openCard(\''+t.id+'\')">'+
+      '<div style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">'+esc(t.e.title)+'</div>'+
+      '<div class="bar"><div class="bar-fill" style="width:'+Math.round(t.n/mx*100)+'%"></div></div></div>'+
+      '<span style="font-family:Nunito;font-weight:800;font-size:12px;color:#6B7280">'+t.n+'</span></div>').join(''):'<div style="font-size:13px;color:#9CA3AF">No views recorded</div>')+'</div>';
+  h+='<div class="card" style="overflow-x:auto"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:10px">Activity by agent</div>'+tfTable(evs,peers)+'</div>';
+  return h;
+}
+function rAdminTraffic(){return ctxBar()+'<div class="pg-title">Traffic</div><div class="pg-sub">Who is actually opening the repository in '+esc(viewLabel())+'</div>'+rTraffic(false)}
+function rQs(){
+  const qs=QUESTIONS.filter(q=>{const e=ENTRIES.find(x=>x.id===q.id);return e&&inScope(e)});
+  let h=ctxBar()+'<div class="pg-title">Follow-up questions</div><div class="pg-sub">Raised against entries in '+esc(viewLabel())+'</div>';
+  if(!qs.length)return h+'<div class="card empty"><div class="empty-t">No open questions</div></div>';
+  qs.forEach(q=>{
+    const e=ENTRIES.find(x=>x.id===q.id);
+    h+='<div class="card card-hover" style="cursor:pointer" onclick="openCard(\''+e.id+'\')"><div class="entry-meta"><span class="badge" style="background:'+MODULES[e.m].bg+';color:'+MODULES[e.m].color+'">'+MODULES[e.m].name+'</span><span class="eid">'+e.id+'</span><span style="font-size:12.5px;color:#6B7280">'+esc(e.title)+'</span></div>'+
+    '<div style="font-size:14px;line-height:1.6;margin-bottom:10px">'+esc(q.q)+'</div>'+
+    '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:11.5px;color:#9CA3AF">'+esc(nameOf(q.by))+'</span>'+
+    '<button class="btn btn-outline" style="margin-left:auto" onclick="event.stopPropagation();toast(\'Reply is written back to the entry\')">Reply</button></div></div>';
+  });
+  return h;
+}
+
+/* ─── nudge: chat reminders ─── */
+function remRows(){
+  return scopeAgents().map(a=>{
+    const miss=forBpo(a.o).filter(e=>!(ACKS[a.e]&&ACKS[a.e].has(e.id)));
+    const m=MAIL[a.e]||{last:0};
+    const days=m.last?Math.floor((NOW.getTime()-m.last)/864e5):999;
+    let why='';
+    if(!miss.length)why='Nothing outstanding';
+    else if(days<REM.cooldown)why='Nudged '+days+'d ago';
+    return {a:a,miss:miss,m:m,days:days,why:why,ok:!why};
+  }).sort((x,y)=>(y.ok-x.ok)||(y.miss.length-x.miss.length));
+}
+function chatBody(r){
+  return 'Hi '+r.a.n.split(' ')[0]+' — you have '+r.miss.length+' update'+(r.miss.length===1?'':'s')+
+    ' waiting in the Agent Repository:\n'+r.miss.slice(0,5).map(e=>'· '+rid(e)+' — '+e.title).join('\n')+
+    (r.miss.length>5?'\n· and '+(r.miss.length-5)+' more':'')+
+    '\nPlease read and acknowledge them today. Thanks!';
+}
+function markNudged(emails){emails.forEach(e=>{if(!MAIL[e])MAIL[e]={last:0};MAIL[e].last=NOW.getTime()})}
+function openCopy(text,label,emails){S.modal='copy';S.copyText=text;S.copyLabel=label;S.copyFor=emails||[];renderModal()}
+function doCopy(){
+  const ta=$('copyArea');
+  if(ta){ta.focus();ta.select()}
+  let ok=false;
+  try{ok=document.execCommand('copy')}catch(err){ok=false}
+  if(!ok&&navigator.clipboard&&ta){navigator.clipboard.writeText(ta.value).then(()=>{},()=>{});ok=true}
+  if(S.copyFor&&S.copyFor.length){
+    snap();markNudged(S.copyFor);
+    REMLOG.unshift({t:Date.now(),by:S.me,n:S.copyFor.length,skipped:0,bpo:viewLabel()});
+  }
+  toast(ok?'Copied — paste into the agent chat':'Select the text and press Ctrl+C');
+  closeModal();render();
+}
+function copyOne(email){
+  const r=remRows().find(x=>x.a.e===email);
+  if(!r)return;
+  openCopy(chatBody(r),'Chat reminder for '+r.a.n,[email]);
+}
+function copyAllChat(){
+  const go=remRows().filter(r=>r.ok);
+  if(!go.length){toast('Nobody is eligible right now');return}
+  const txt=go.map(r=>'── '+r.a.n+' ('+r.a.e+') ──\n'+chatBody(r)).join('\n\n');
+  openCopy(txt,'Chat reminders for '+go.length+' agents',go.map(r=>r.a.e));
+}
+function setCooldown(v){REM.cooldown=parseInt(v,10)||0;renderMain();renderSide()}
+
+function rNudge(){
+  const rows=remRows(),go=rows.filter(r=>r.ok);
+  const outstanding=rows.filter(r=>r.miss.length);
+  const cooling=rows.filter(r=>!r.ok&&r.miss.length);
+  let h=ctxBar()+'<div class="pg-title">Nudge</div><div class="pg-sub">Copy a reminder and paste it into the agent chat yourself — each person gets only their own outstanding list</div>';
+  h+='<div class="stat-grid">'+
+    '<div class="card"><div class="stat-label">Ready to nudge</div><div class="stat-val" style="color:'+(go.length?'#EE4D2D':'#059669')+'">'+go.length+'</div><div class="stat-note">of '+rows.length+' agents in scope</div></div>'+
+    '<div class="card"><div class="stat-label">Behind</div><div class="stat-val">'+outstanding.length+'</div><div class="stat-note">have something outstanding</div></div>'+
+    '<div class="card"><div class="stat-label">In cooldown</div><div class="stat-val">'+cooling.length+'</div><div class="stat-note">nudged too recently</div></div>'+
+    '<div class="card"><div class="stat-label">Last nudge</div><div class="stat-val" style="font-size:17px">'+(REMLOG.length?fmt(dayKey(new Date(REMLOG[0].t))):'never')+'</div><div class="stat-note">'+(REMLOG.length?REMLOG[0].n+' agents':'no history')+'</div></div>'+
+  '</div>';
+  h+='<div class="card" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">'+
+    '<div style="width:210px"><label class="flab">Cooldown</label><select class="inp" onchange="setCooldown(this.value)">'+
+      [0,3,5,7,14].map(d=>'<option value="'+d+'"'+(REM.cooldown===d?' selected':'')+'>'+(d?'Skip if nudged within '+d+'d':'No cooldown')+'</option>').join('')+'</select></div>'+
+    '<span style="font-size:12px;color:#9CA3AF;max-width:340px;line-height:1.5">Copying marks an agent as nudged, so the cooldown applies whether you paste it or not.</span>'+
+    '<button class="btn btn-primary" style="margin-left:auto" onclick="copyAllChat()"'+(go.length?'':' disabled')+'>Copy all '+go.length+' for chat</button></div>';
+  h+='<div class="card" style="overflow-x:auto"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:10px">Recipients</div>'+
+    '<table class="ptab"><thead><tr><th>Agent</th><th>Outstanding</th><th>Missing</th><th>Last nudged</th><th>Status</th><th></th></tr></thead><tbody>';
+  rows.forEach(r=>{
+    h+='<tr><td style="font-weight:500">'+esc(r.a.n)+'<div style="font-size:10.5px;color:#9CA3AF">'+esc(r.a.o)+'</div></td>'+
+      '<td><span class="badge" style="background:'+(r.miss.length?'#FEF2F2':'#ECFDF5')+';color:'+(r.miss.length?'#DC2626':'#059669')+'">'+r.miss.length+'</span></td>'+
+      '<td style="max-width:280px"><div style="display:flex;gap:4px;flex-wrap:wrap">'+r.miss.slice(0,6).map(e=>'<span class="badge" style="background:'+MODULES[e.m].bg+';color:'+MODULES[e.m].color+';cursor:pointer" onclick="openCard(\''+e.id+'\')" title="'+esc(e.title)+'">'+rid(e)+'</span>').join('')+(r.miss.length>6?'<span style="font-size:11px;color:#9CA3AF">+'+(r.miss.length-6)+'</span>':'')+'</div></td>'+
+      '<td style="font-size:11.5px;color:#6B7280">'+(r.m.last?r.days+' days ago':'never')+'</td>'+
+      '<td>'+(r.ok?'<span class="badge" style="background:#FFF1ED;color:#EE4D2D">Ready</span>':'<span style="font-size:11.5px;color:#9CA3AF">'+esc(r.why)+'</span>')+'</td>'+
+      '<td style="text-align:right">'+(r.miss.length?'<button class="btn btn-outline btn-xs" onclick="copyOne(\''+r.a.e+'\')">Copy</button>':'')+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="card" style="padding:8px 0"><div style="font-family:Nunito;font-weight:800;font-size:15px;padding:10px 14px 6px">Nudge history</div>'+
+    (REMLOG.length?REMLOG.map(l=>'<div class="log"><span class="ic" style="background:#F1EBFE;color:#8B5CF6">C</span>'+
+      '<div style="flex:1"><div><b style="font-family:Nunito">'+esc(nameOf(l.by))+'</b> copied '+l.n+' reminder'+(l.n===1?'':'s')+'</div>'+
+      '<div style="font-size:11px;color:#9CA3AF">'+esc(l.bpo)+' · '+fmtT(l.t)+'</div></div></div>').join('')
+      :'<div class="empty" style="padding:26px"><div style="font-size:13px">No nudges yet</div></div>')+'</div>';
+  return h;
+}
+
+/* ─── super admin: version history ─── */
+function rVersions(){
+  let h=ctxBar()+'<div class="pg-title">Version history</div><div class="pg-sub">One release per day that changes are made — the number shown in the sidebar comes straight from this list</div>';
+  const total=CHANGELOG.reduce((n,c)=>n+c.notes.length,0);
+  h+='<div class="stat-grid">'+
+    '<div class="card"><div class="stat-label">Current version</div><div class="stat-val" style="color:#EE4D2D">v'+esc(APP_V)+'</div><div class="stat-note">released '+fmt(CHANGELOG[0].d)+'</div></div>'+
+    '<div class="card"><div class="stat-label">Releases</div><div class="stat-val">'+CHANGELOG.length+'</div><div class="stat-note">days with changes</div></div>'+
+    '<div class="card"><div class="stat-label">Logged changes</div><div class="stat-val">'+total+'</div><div class="stat-note">across all releases</div></div>'+
+    '<div class="card"><div class="stat-label">First release</div><div class="stat-val" style="font-size:17px">'+fmt(CHANGELOG[CHANGELOG.length-1].d)+'</div><div class="stat-note">v'+esc(CHANGELOG[CHANGELOG.length-1].v)+'</div></div>'+
+  '</div>';
+  CHANGELOG.forEach((c,i)=>{
+    const cur=i===0;
+    h+='<div class="card"'+(cur?' style="border-color:#FFD9CE"':'')+'>'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'+
+        '<span class="badge" style="background:'+(cur?'#EE4D2D':'#F3F4F6')+';color:'+(cur?'#fff':'#6B7280')+';font-size:12px;padding:5px 12px">v'+esc(c.v)+'</span>'+
+        '<span style="font-size:13px;color:#374151;font-weight:500">'+fmt(c.d)+'</span>'+
+        (c.by?'<span style="font-size:11.5px;color:#9CA3AF">'+esc(nameOf(c.by))+'</span>':'')+
+        (cur?'<span class="badge" style="background:#ECFDF5;color:#059669;margin-left:auto">Live now</span>':'')+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;gap:7px">'+
+      c.notes.map(n=>'<div style="display:flex;gap:9px;font-size:13px;color:#4B5563;line-height:1.6">'+
+        '<span style="color:#EE4D2D;font-weight:900;flex-shrink:0">·</span><span>'+esc(n)+'</span></div>').join('')+
+      '</div></div>';
+  });
+  h+='<div class="card" style="background:#F9FAFB"><div style="font-family:Nunito;font-weight:800;font-size:14px;margin-bottom:6px">How the number moves</div>'+
+    '<div style="font-size:13px;color:#4B5563;line-height:1.7">Every screen reads the version from the top entry of the changelog, so adding one dated entry updates the sidebar, the sign-in screen, the browser tab and this page together. A new day of changes takes the major number up — v'+esc(APP_V)+' becomes v'+(parseInt(APP_V,10)+1)+'.0. A second revision on the same day moves the minor instead, v'+esc(APP_V)+' to v'+parseInt(APP_V,10)+'.1.</div></div>';
+  return h;
+}
+
+/* ─── super admin: access requests ─── */
+function approveReq(i){
+  const r=REQUESTS[i];
+  const bp=BPOS.filter(b=>$('rb-'+i+'-'+b.replace(/\s/g,'')).checked);
+  if(!bp.length){toast('Tick at least one BPO before approving');return}
+  if(findPerson(r.e)){
+    snap();const p=findPerson(r.e);p.bpos=bp;r.st='approved';
+    seedAcks();toast('Access restored for '+r.n,true);render();return;
+  }
+  snap();
+  PEOPLE.push({e:r.e,n:r.n,o:$('ro-'+i).value,r:$('rr-'+i).value,bpos:bp,adm:false,sup:false});
+  r.st='approved';r.by=S.me;
+  seedAcks();toast(r.n+' approved and added to the namelist',true);render();
+}
+function rejectReq(i){
+  if(!confirm('Reject this request?\n\n'+REQUESTS[i].e+' stays locked out.'))return;
+  snap();REQUESTS[i].st='rejected';REQUESTS[i].by=S.me;toast('Request rejected',true);render();
+}
+function guessOrg(email){
+  const l=email.toLowerCase();
+  if(l.indexOf('@shopee.com')>=0)return IH;
+  if(l.indexOf('vads')>=0)return 'Vads';
+  if(l.indexOf('ep.')>=0)return 'ePerformax';
+  if(l.indexOf('ar.')>=0)return 'Asia Recruit';
+  return '';
+}
+function rRequests(){
+  const pend=REQUESTS.map((r,i)=>({r:r,i:i})).filter(x=>x.r.st==='pending');
+  const done=REQUESTS.map((r,i)=>({r:r,i:i})).filter(x=>x.r.st!=='pending');
+  let h=ctxBar()+'<div class="pg-title">Access requests</div><div class="pg-sub">People who hit the sign-in screen and asked to be let in</div>';
+  h+='<div class="stat-grid">'+
+    '<div class="card"><div class="stat-label">Pending</div><div class="stat-val" style="color:'+(pend.length?'#EE4D2D':'#059669')+'">'+pend.length+'</div><div class="stat-note">awaiting your decision</div></div>'+
+    '<div class="card"><div class="stat-label">Approved</div><div class="stat-val">'+REQUESTS.filter(r=>r.st==='approved').length+'</div><div class="stat-note">added to the namelist</div></div>'+
+    '<div class="card"><div class="stat-label">Rejected</div><div class="stat-val">'+REQUESTS.filter(r=>r.st==='rejected').length+'</div><div class="stat-note">still locked out</div></div>'+
+    '<div class="card"><div class="stat-label">Blocked attempts</div><div class="stat-val">'+DENIED.length+'</div><div class="stat-note">sign-ins refused</div></div>'+
+  '</div>';
+  if(!pend.length)h+='<div class="card empty"><div class="empty-t">No pending requests</div><div style="font-size:13px">Anyone denied at sign-in can ask for access, and it lands here.</div></div>';
+  pend.forEach(x=>{
+    const r=x.r,i=x.i,known=findPerson(r.e);
+    const g=r.bpo||guessOrg(r.e), dg=r.desig||'Agent';
+    h+='<div class="card" style="border-color:#FFD9CE">'+
+      '<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">'+
+        '<div style="width:34px;height:34px;border-radius:50%;background:#FFF1ED;color:#EE4D2D;display:flex;align-items:center;justify-content:center;font-family:Nunito;font-weight:900;font-size:12px">'+esc(r.n.split(' ').map(y=>y[0]).join(''))+'</div>'+
+        '<div style="flex:1;min-width:0"><div style="font-family:Nunito;font-weight:800;font-size:15px">'+esc(r.n)+'</div>'+
+        '<div style="font-size:11.5px;color:#9CA3AF">'+esc(r.e)+' · asked '+fmtT(r.t)+'</div></div>'+
+        (known?'<span class="badge" style="background:#FFFBEB;color:#B45309">Already on the namelist with no BPO</span>':'')+
+      '</div>'+
+      '<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:12px">'+
+        '<span style="font-size:11px;color:#9CA3AF;font-family:Nunito;font-weight:800;letter-spacing:.3px">THEY SELECTED</span>'+
+        '<span class="badge" style="background:#F3F4F6;color:#6B7280">'+esc(r.bpo||'not stated')+'</span>'+
+        '<span class="badge" style="background:#F3F4F6;color:#6B7280">'+esc(r.desig||'not stated')+'</span>'+
+        '<span style="font-size:11px;color:#B45309">unverified — confirm before approving</span></div>'+
+      (r.note?'<div style="font-size:13px;color:#4B5563;background:#F9FAFB;padding:11px 14px;border-radius:10px;line-height:1.6;margin-bottom:14px">'+esc(r.note)+'</div>':'')+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:12px">'+
+        '<div><label class="flab">BPO</label><select class="inp" id="ro-'+i+'">'+ORGS.map(o=>'<option'+((known?known.o:g)===o?' selected':'')+'>'+o+'</option>').join('')+'</select></div>'+
+        '<div><label class="flab">Designation</label><select class="inp" id="rr-'+i+'">'+ROLES.map(y=>'<option'+(dg===y?' selected':'')+'>'+y+'</option>').join('')+'</select></div>'+
+      '</div>'+
+      '<label class="flab">Grant these BPO sections</label>'+
+      '<div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">'+
+        BPOS.map(b=>'<label class="tog" style="cursor:pointer"><input type="checkbox" id="rb-'+i+'-'+b.replace(/\s/g,'')+'" style="margin:0"'+(g===b?' checked':'')+'> '+b+'</label>').join('')+
+        '<div style="margin-left:auto;display:flex;gap:8px">'+
+          '<button class="btn btn-primary" onclick="approveReq('+i+')">Approve</button>'+
+          '<button class="btn btn-del" onclick="rejectReq('+i+')">Reject</button></div>'+
+      '</div>'+
+      '<div style="font-size:11.5px;color:#9CA3AF;margin-top:11px">Admin and Super Admin are never granted from here — set those in People and access afterwards.</div>'+
+    '</div>';
+  });
+  if(done.length){
+    h+='<div class="card" style="padding:8px 0"><div style="font-family:Nunito;font-weight:800;font-size:15px;padding:10px 14px 6px">Decided</div>'+
+      done.map(x=>{
+        const ap=x.r.st==='approved';
+        return '<div class="log"><span class="ic" style="background:'+(ap?'#ECFDF5':'#FEF2F2')+';color:'+(ap?'#059669':'#DC2626')+'">'+(ap?'A':'R')+'</span>'+
+          '<div style="flex:1"><div><b style="font-family:Nunito">'+esc(x.r.n)+'</b> '+(ap?'approved':'rejected')+(x.r.by?' by '+esc(nameOf(x.r.by)):'')+'</div>'+
+          '<div style="font-size:11px;color:#9CA3AF">'+esc(x.r.e)+'</div></div></div>';
+      }).join('')+'</div>';
+  }
+  h+='<div class="card" style="padding:8px 0"><div style="font-family:Nunito;font-weight:800;font-size:15px;padding:10px 14px 4px">Acknowledgements that did not import</div>'+
+    '<div style="font-size:12px;color:#9CA3AF;padding:0 14px 8px">Rows found in the old Google Form tracker that could not be matched to a person or an entry. Nothing was silently dropped.</div>'+
+    ORPHANS.map(o=>'<div class="log"><span class="ic" style="background:#FEF2F2;color:#DC2626">!</span>'+
+      '<div style="flex:1"><div style="font-size:12.5px">'+esc(o.e)+' — '+esc(o.ids.join(', '))+'</div>'+
+      '<div style="font-size:11px;color:#9CA3AF">'+esc(o.why)+'</div></div></div>').join('')+'</div>';
+  h+='<div class="card" style="padding:8px 0"><div style="font-family:Nunito;font-weight:800;font-size:15px;padding:10px 14px 4px">Blocked sign-in attempts</div>'+
+    '<div style="font-size:12px;color:#9CA3AF;padding:0 14px 8px">Every refused sign-in is logged, whether or not they asked for access.</div>'+
+    DENIED.slice(0,12).map(d=>'<div class="log"><span class="ic" style="background:#F3F4F6;color:#6B7280">×</span>'+
+      '<div style="flex:1"><div style="font-size:12.5px">'+esc(d.e)+'</div>'+
+      '<div style="font-size:11px;color:#9CA3AF">'+fmtT(d.t)+'</div></div>'+
+      (REQUESTS.some(r=>r.e===d.e)?'<span class="badge" style="background:#F3F4F6;color:#6B7280">requested</span>':'')+
+      '</div>').join('')+'</div>';
+  return h;
+}
+
+/* ─── super admin: people ─── */
+function parsePaste(text){
+  const ok=[],bad=[];
+  text.split(/\r?\n/).forEach(line=>{
+    if(!line.trim())return;
+    const c=(line.indexOf('\t')>=0?line.split('\t'):line.split(',')).map(x=>x.trim().replace(/^"|"$/g,''));
+    if(/e-?mail/i.test(c[0])||/^name$/i.test(c[0]))return;
+    const email=(c[0]||'').toLowerCase();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){bad.push(line.slice(0,60));return}
+    const name=c[1]||email.split('@')[0];
+    const org=ORGS.find(o=>o.toLowerCase()===String(c[2]||'').toLowerCase())||'';
+    const role=ROLES.find(r=>r.toLowerCase()===String(c[3]||'').toLowerCase())||'Agent';
+    let bpos=[];
+    const raw=String(c[4]||'').toLowerCase();
+    const sup=raw.indexOf('super admin')>=0;
+    const adm=sup||raw.replace('super admin','').indexOf('admin')>=0;
+    if(raw.indexOf('all')>=0)bpos=BPOS.slice();
+    else bpos=BPOS.filter(b=>raw.indexOf(b.toLowerCase())>=0);
+    if(!bpos.length&&org&&org!==IH)bpos=[org];
+    if(!org){bad.push(email+' — organisation missing or not recognised');return}
+    if(!bpos.length){bad.push(email+' — no BPO access specified');return}
+    ok.push({e:email,n:name,o:org,r:role,bpos:bpos,adm:adm,sup:sup});
+  });
+  return {ok:ok,bad:bad};
+}
+function setPaste(v){S.paste=v;renderMain()}
+function pasteDiff(ok){
+  const inc={};ok.forEach(p=>inc[p.e]=p);
+  return {
+    added:ok.filter(p=>!findPerson(p.e)),
+    kept:ok.filter(p=>findPerson(p.e)),
+    removed:PEOPLE.filter(p=>!inc[p.e])
+  };
+}
+function applyPaste(){
+  const r=parsePaste(S.paste);
+  if(!r.ok.length){toast('Nothing valid to import');return}
+  const d=pasteDiff(r.ok);
+  const selfGone=d.removed.some(p=>p.e===S.me);
+  let msg='Replace the entire namelist?\n\n'+d.added.length+' added\n'+d.kept.length+' kept or updated\n'+d.removed.length+' removed and locked out';
+  if(d.removed.length)msg+='\n\nRemoved: '+d.removed.slice(0,8).map(p=>p.n).join(', ')+(d.removed.length>8?' and '+(d.removed.length-8)+' more':'');
+  if(selfGone)msg+='\n\nYour own account is not in this list. It will be kept so you are not locked out.';
+  if(!confirm(msg))return;
+  snap();
+  const self=findPerson(S.me);
+  PEOPLE.length=0;
+  r.ok.forEach(p=>PEOPLE.push(p));
+  if(selfGone&&self)PEOPLE.push(self);
+  seedAcks();seedMail();S.paste='';
+  toast('Namelist replaced — '+r.ok.length+' people'+(d.removed.length?', '+d.removed.length+' removed':'')+(selfGone?', your access kept':''),true);
+  render();
+}
+function addPerson(){
+  const e=($('pe').value||'').trim().toLowerCase(),n=($('pn').value||'').trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){toast('Enter a valid email address');return}
+  if(findPerson(e)){toast('That address is already on the namelist');return}
+  const bp=BPOS.filter(b=>$('pb-'+b.replace(/\s/g,'')).checked);
+  if(!bp.length){toast('Tick at least one BPO or they cannot sign in');return}
+  const adm=$('pb-ADM').checked,sup=$('pb-SUP').checked;
+  if(sup&&!confirm('Grant Super Admin?\n\nThey will be able to add and remove anyone, including you.'))return;
+  snap();
+  PEOPLE.push({e:e,n:n||e.split('@')[0],o:$('po').value,r:$('pr').value,bpos:bp,adm:adm||sup,sup:sup});
+  seedAcks();toast('Added to the namelist',true);render();
+}
+function togBpo(email,b){
+  snap();const p=findPerson(email),i=p.bpos.indexOf(b);
+  if(i>=0)p.bpos.splice(i,1);else p.bpos.push(b);
+  if(email===S.me){
+    if(!p.bpos.length){p.bpos.push(b);toast('You cannot remove your own last BPO');return}
+    S.view=p.bpos.length>1?'__all':p.bpos[0];
+  }
+  toast('Access updated',true);render();
+}
+function togSec(email,k){
+  const p=findPerson(email);
+  if(k==='sup'&&!p.sup&&!confirm('Grant Super Admin to '+p.n+'?\n\nThey will be able to add and remove anyone, including you.'))return;
+  if(email===S.me&&k==='sup'&&p.sup){toast('You cannot remove your own Super Admin access');return}
+  if(email===S.me&&k==='adm'&&p.adm&&!p.sup){toast('You cannot remove your own Admin access');return}
+  snap();
+  p[k]=!p[k];
+  if(k==='sup'&&p.sup)p.adm=true;
+  if(k==='adm'&&!p.adm)p.sup=false;
+  toast('Section access updated',true);render();
+}
+function setRole(email,r){snap();findPerson(email).r=r;toast('Job title updated',true);render()}
+function setOrg(email,o){snap();findPerson(email).o=o;toast('Organisation updated',true);render()}
+function removePerson(email){
+  if(email===S.me){toast('You cannot remove your own access');return}
+  if(!confirm('Remove '+email+'?\n\nThey lose access immediately. Acknowledgement history is kept.'))return;
+  snap();PEOPLE.splice(PEOPLE.findIndex(p=>p.e===email),1);toast('Access removed',true);render();
+}
+function rPeople(){
+  const pv=S.paste.trim()?parsePaste(S.paste):null;
+  let h=ctxBar()+'<div class="pg-title">People and access</div><div class="pg-sub">The whitelist. Not on this list means the app will not open at all.</div>';
+  h+='<div class="card"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:4px">Paste from Excel</div>'+
+    '<div style="font-size:12.5px;color:#6B7280;margin-bottom:10px">Copy the rows in Excel and paste here. Columns in order: <b>Email · Name · Organisation · Designation · Section access</b>. Access can be <span class="kw">all</span> or a list like <span class="kw">Vads, Admin</span>. A header row is ignored.</div>'+
+    '<div style="background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;font-size:12.5px;padding:11px 14px;border-radius:10px;line-height:1.6;margin-bottom:12px"><b>Every paste replaces the whole namelist.</b> Anyone not in what you paste is removed and locked out immediately. Paste the complete list, not just the new joiners.</div>'+
+    '<textarea class="inp" id="pastebox" rows="4" style="font-family:monospace;font-size:12px;resize:vertical" placeholder="ep.new.agent@shopeemobile-external.com&#9;New Agent&#9;ePerformax&#9;Agent&#9;ePerformax" oninput="setPaste(this.value)">'+esc(S.paste)+'</textarea>';
+  if(pv){
+    const df=pasteDiff(pv.ok);
+    h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:12px">'+
+      '<div style="background:#ECFDF5;border-radius:10px;padding:10px 13px"><div style="font-size:10.5px;font-family:Nunito;font-weight:800;color:#059669;letter-spacing:.4px">ADDED</div><div style="font-size:19px;font-weight:900;font-family:Nunito;color:#059669">'+df.added.length+'</div></div>'+
+      '<div style="background:#F9FAFB;border-radius:10px;padding:10px 13px"><div style="font-size:10.5px;font-family:Nunito;font-weight:800;color:#6B7280;letter-spacing:.4px">KEPT</div><div style="font-size:19px;font-weight:900;font-family:Nunito;color:#374151">'+df.kept.length+'</div></div>'+
+      '<div style="background:#FEF2F2;border-radius:10px;padding:10px 13px"><div style="font-size:10.5px;font-family:Nunito;font-weight:800;color:#DC2626;letter-spacing:.4px">REMOVED</div><div style="font-size:19px;font-weight:900;font-family:Nunito;color:#DC2626">'+df.removed.length+'</div></div>'+
+      '<div style="background:#FFFBEB;border-radius:10px;padding:10px 13px"><div style="font-size:10.5px;font-family:Nunito;font-weight:800;color:#B45309;letter-spacing:.4px">SKIPPED</div><div style="font-size:19px;font-weight:900;font-family:Nunito;color:#B45309">'+pv.bad.length+'</div></div>'+
+    '</div>';
+    if(df.removed.length)h+='<div style="margin-top:11px;font-size:12.5px;color:#374151"><b style="color:#DC2626">Will be removed and locked out:</b><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px">'+
+      df.removed.map(p=>'<span class="badge" style="background:#FEF2F2;color:#DC2626">'+esc(p.n)+(p.e===S.me?' (you — will be kept)':'')+'</span>').join('')+'</div></div>';
+    if(pv.ok.length)h+='<div style="margin-top:9px;overflow-x:auto"><table class="ptab"><thead><tr><th>Email</th><th>Name</th><th>Org</th><th>Job title</th><th>Can open</th></tr></thead><tbody>'+
+      pv.ok.slice(0,6).map(p=>'<tr><td style="font-size:11.5px">'+esc(p.e)+'</td><td>'+esc(p.n)+'</td><td>'+esc(p.o)+'</td><td>'+esc(p.r)+'</td><td style="font-size:11.5px">'+esc(p.bpos.join(', ')+(p.sup?' + Super Admin':(p.adm?' + Admin':'')))+'</td></tr>').join('')+
+      (pv.ok.length>6?'<tr><td colspan="5" style="color:#9CA3AF;font-size:11.5px">and '+(pv.ok.length-6)+' more…</td></tr>':'')+'</tbody></table></div>';
+    if(pv.bad.length)h+='<div style="font-size:11.5px;color:#DC2626;margin-top:8px;line-height:1.6">'+pv.bad.slice(0,4).map(esc).join('<br>')+'</div>';
+    h+='<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-del" onclick="applyPaste()">Replace namelist with '+pv.ok.length+' people</button>'+
+      '<button class="btn btn-outline" onclick="setPaste(\'\')">Clear</button></div>';
+  }
+  h+='</div>';
+  h+='<div class="card"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:13px">Or add one person</div>'+
+    '<div style="display:grid;grid-template-columns:2fr 1.4fr 1fr 1fr;gap:11px;margin-bottom:13px">'+
+      '<div><label class="flab">Google email</label><input class="inp" id="pe" placeholder="name@shopeemobile-external.com"></div>'+
+      '<div><label class="flab">Full name</label><input class="inp" id="pn" placeholder="Full name"></div>'+
+      '<div><label class="flab">Organisation</label><select class="inp" id="po">'+ORGS.map(o=>'<option>'+o+'</option>').join('')+'</select></div>'+
+      '<div><label class="flab">Role</label><select class="inp" id="pr">'+ROLES.map(r=>'<option>'+r+'</option>').join('')+'</select></div>'+
+    '</div><label class="flab">Can open these sections</label>'+
+    '<div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">'+
+      BPOS.map(b=>'<label class="tog" style="cursor:pointer"><input type="checkbox" id="pb-'+b.replace(/\s/g,'')+'" style="margin:0"> '+b+'</label>').join('')+
+      '<span style="width:1px;height:22px;background:#E5E7EB;margin:0 3px"></span>'+
+      '<label class="tog" style="cursor:pointer"><input type="checkbox" id="pb-ADM" style="margin:0"> Admin</label>'+
+      '<label class="tog" style="cursor:pointer"><input type="checkbox" id="pb-SUP" style="margin:0"> Super Admin</label>'+
+      '<button class="btn btn-primary" style="margin-left:auto" onclick="addPerson()">Add to namelist</button></div></div>';
+  h+='<div class="stat-grid">'+ORGS.map(o=>{
+    const g=PEOPLE.filter(p=>p.o===o);
+    return '<div class="card"><div class="stat-label">'+esc(o)+'</div><div class="stat-val">'+g.length+'</div><div class="stat-note">'+g.filter(p=>p.r==='Agent').length+' agents · '+g.filter(p=>p.r!=='Agent').length+' other</div></div>';
+  }).join('')+'</div>';
+  h+='<div class="card" style="overflow-x:auto"><table class="ptab"><thead><tr><th>Name</th><th>Email</th><th>Org</th><th>Job title</th><th>Can open</th><th></th></tr></thead><tbody>';
+  PEOPLE.forEach(p=>{
+    h+='<tr><td style="font-weight:500">'+esc(p.n)+(p.r==='Super Admin'?' <span class="badge" style="background:#EEF2FF;color:#0053DE">SA</span>':'')+'</td>'+
+      '<td style="font-size:11.5px;color:#6B7280">'+esc(p.e)+'</td>'+
+      '<td><select onchange="setOrg(\''+p.e+'\',this.value)">'+ORGS.map(o=>'<option'+(p.o===o?' selected':'')+'>'+o+'</option>').join('')+'</select></td>'+
+      '<td><select onchange="setRole(\''+p.e+'\',this.value)">'+ROLES.map(r=>'<option'+(p.r===r?' selected':'')+'>'+r+'</option>').join('')+'</select></td>'+
+      '<td><div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">'+BPOS.map(b=>{
+        const on=p.bpos.indexOf(b)>=0;
+        return '<button class="tog '+(on?'on':'')+'" onclick="togBpo(\''+p.e+'\',\''+b+'\')"><span class="b">'+(on?'✓':'')+'</span>'+b+'</button>';
+      }).join('')+
+      '<span style="width:1px;height:18px;background:#E5E7EB"></span>'+
+      '<button class="tog '+(p.adm?'on':'')+'" style="'+(p.adm?'background:#0053DE;border-color:#0053DE':'')+'" onclick="togSec(\''+p.e+'\',\'adm\')"><span class="b">'+(p.adm?'✓':'')+'</span>Admin</button>'+
+      '<button class="tog '+(p.sup?'on':'')+'" style="'+(p.sup?'background:#6D28D9;border-color:#6D28D9':'')+'" onclick="togSec(\''+p.e+'\',\'sup\')"><span class="b">'+(p.sup?'✓':'')+'</span>Super Admin</button>'+
+      '</div>'+(p.bpos.length?'':'<div style="font-size:10.5px;color:#DC2626;margin-top:4px">No access — cannot sign in</div>')+'</td>'+
+      '<td style="text-align:right"><button class="btn btn-xs btn-del" onclick="removePerson(\''+p.e+'\')">Remove</button></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  return h+'<div class="card" style="background:#FFFBEB;border-color:#FDE68A"><div style="font-family:Nunito;font-weight:800;font-size:14px;margin-bottom:6px;color:#92400E">This table is the security boundary</div>'+
+    '<div style="font-size:13px;color:#78350F;line-height:1.65">In the live build these toggles must be enforced by Firestore rules reading this document server-side. Hiding a section in the frontend is presentation, not protection.</div></div>';
+}
+const EVLABEL={publish:['Published','#ECFDF5','#059669'],edit:['Edited','#EAF1FE','#0053DE'],unpublish:['Unpublished','#FFFBEB','#B45309'],draft:['Saved draft','#F3F4F6','#6B7280'],delete:['Deleted','#FEF2F2','#DC2626']};
+function rAudit(){
+  let h=ctxBar()+'<div class="pg-title">Traffic and publishing</div><div class="pg-sub">Every BPO, and who changed what</div>'+rTraffic(true);
+  const pubs=EVENTS.filter(v=>EVLABEL[v.k]);
+  const byWho={};pubs.forEach(v=>{byWho[v.w]=(byWho[v.w]||0)+1});
+  const rank=Object.keys(byWho).map(w=>({w:w,n:byWho[w]})).sort((a,b)=>b.n-a.n);
+  const mx=rank.length?rank[0].n:1;
+  h+='<div class="card"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:10px">Who publishes</div>'+
+    rank.map((r,i)=>'<div class="rank"><span class="n">'+(i+1)+'</span><div style="flex:1;min-width:0">'+
+      '<div style="font-size:12.5px;margin-bottom:4px">'+esc(nameOf(r.w))+' <span style="color:#9CA3AF;font-size:11px">'+esc(orgOf(r.w))+'</span></div>'+
+      '<div class="bar"><div class="bar-fill" style="width:'+Math.round(r.n/mx*100)+'%"></div></div></div>'+
+      '<span style="font-family:Nunito;font-weight:800;font-size:12px;color:#6B7280">'+r.n+'</span></div>').join('')+'</div>';
+  h+='<div class="card" style="padding:8px 0"><div style="font-family:Nunito;font-weight:800;font-size:15px;padding:10px 14px 6px">Publishing activity</div>';
+  pubs.slice(0,30).forEach(v=>{
+    const L=EVLABEL[v.k],e=ENTRIES.find(x=>x.id===v.id);
+    h+='<div class="log"'+(e?' style="cursor:pointer" onclick="openCard(\''+e.id+'\')"':'')+'><span class="ic" style="background:'+L[1]+';color:'+L[2]+'">'+L[0][0]+'</span>'+
+      '<div style="flex:1;min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+
+      '<b style="font-family:Nunito">'+esc(nameOf(v.w))+'</b> '+L[0].toLowerCase()+' <span class="eid">'+esc(v.id||'')+'</span> — '+esc(e?e.title:'(deleted entry)')+'</div>'+
+      '<div style="font-size:11px;color:#9CA3AF">'+esc(v.b==='all'?'All BPOs':(v.b||'—'))+' · '+fmtT(v.t)+'</div></div></div>';
+  });
+  return h+'</div>';
+}
+
+/* ─── router with focus preservation ─── */
+function renderMain(){
+  const m=$('main');
+  const ae=document.activeElement;
+  const fid=ae&&ae.id?ae.id:null;
+  let pos=null;
+  if(fid){try{pos=ae.selectionStart}catch(err){pos=null}}
+  const A=isAdmin(),SU=isSuper();
+  switch(S.tab){
+    case 'home':m.innerHTML=rHome();break;
+    case 'done':m.innerHTML=rDone();break;
+    case 'manage':m.innerHTML=A?rManage():rHome();break;
+    case 'admin':m.innerHTML=A?rAdmin():rHome();break;
+    case 'chase':m.innerHTML=A?rChase():rHome();break;
+    case 'reminders':m.innerHTML=A?rNudge():rHome();break;
+    case 'traffic':m.innerHTML=A?rAdminTraffic():rHome();break;
+    case 'qs':m.innerHTML=A?rQs():rHome();break;
+    case 'people':m.innerHTML=SU?rPeople():rHome();break;
+    case 'requests':m.innerHTML=SU?rRequests():rHome();break;
+    case 'audit':m.innerHTML=SU?rAudit():rHome();break;
+    case 'versions':m.innerHTML=SU?rVersions():rHome();break;
+    default:m.innerHTML=rModule(S.tab);
+  }
+  if(fid){
+    const n=$(fid);
+    if(n&&typeof n.focus==='function'){
+      n.focus();
+      if(pos!=null&&n.setSelectionRange){try{n.setSelectionRange(pos,pos)}catch(err){}}
+    }
+  }
+  m.firstElementChild&&m.firstElementChild.classList.add('fadeUp');
+}
+function render(){renderSide();renderMain();renderModal()}
+document.title=APP_NAME+' v'+APP_V;
+if($('appTitle'))$('appTitle').innerHTML=APP_NAME+' <span class="vchip">v'+APP_V+'</span>';
+
+/* ══════════════════════════════════════════════════════════════════
+   FIREBASE DATA LAYER
+   Everything above this line renders the interface. Everything below
+   replaces the in-memory stubs with real reads and writes.
+   Function declarations are hoisted, so these definitions win.
+   ══════════════════════════════════════════════════════════════════ */
+
+let FB=null, READY=false;
+const A={};                       // shorthand for the Firebase functions
+let ACKDOCS={};                   // email -> { entryId: timestamp }
+
+function busy(msg){
+  $('main').innerHTML='<div class="card" style="margin-top:60px;text-align:center;padding:50px">'+
+    '<div style="font-family:Nunito;font-weight:800;font-size:16px;color:#6B7280">'+esc(msg)+'</div></div>';
+}
+function fail(where,err){
+  console.error(where,err);
+  const m=String(err&&err.code||err&&err.message||err);
+  if(m.indexOf('permission-denied')>=0)toast('Denied by security rules — '+where);
+  else toast(where+' failed: '+m);
+}
+
+/* ─── boot ─── */
+function fbBoot(fb){
+  FB=fb; Object.assign(A,fb);
+  READY=true;
+  A.onAuthStateChanged(A.auth,async user=>{
+    if(!user){signOut();return}
+    await afterAuth(user);
+  });
+}
+window.__fbBoot=fbBoot;
+if(window.__FB)fbBoot(window.__FB);
+
+/* ─── sign in ─── */
+function renderGate(){
+  const box=$('gate-box');
+  if(S.denied){
+    const already=S.reqDone;
+    box.innerHTML=GLOGO+
+      '<h1 style="font-size:20px;font-weight:900;margin-bottom:6px">No access to this application</h1>'+
+      '<p style="font-size:13px;color:#6B7280;line-height:1.65;margin-bottom:22px">This Google account is not authorised. If you should have access, ask your team lead or request it below.</p>'+
+      (S.reqDone
+        ? '<div style="background:#ECFDF5;color:#065F46;font-size:13px;padding:14px 16px;border-radius:11px;line-height:1.6;text-align:left">Request sent. A super admin will review it — you will be able to sign in once it is approved.</div>'+
+          '<button class="btn btn-outline" style="width:100%;margin-top:14px" onclick="resetGate()">Back to sign in</button>'
+        : S.reqOpen
+        ? '<div style="text-align:left">'+
+            '<label class="flab">Signed in as</label><div class="inp" style="background:#F9FAFB;color:#6B7280;font-size:12.5px;margin-bottom:11px">'+esc(S.denied)+'</div>'+
+            '<label class="flab">Your full name</label><input class="inp" id="rqn" placeholder="Full name" style="margin-bottom:11px">'+
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:11px">'+
+              '<div><label class="flab">BPO</label><select class="inp" id="rqb"><option value="">Select…</option>'+
+                ORGS.map(o=>'<option value="'+o+'">'+o+'</option>').join('')+'</select></div>'+
+              '<div><label class="flab">Designation</label><select class="inp" id="rqd"><option value="">Select…</option>'+
+                ROLES.filter(y=>y!=='Super Admin').map(y=>'<option value="'+y+'">'+y+'</option>').join('')+'</select></div>'+
+            '</div>'+
+            '<label class="flab">Anything else we should know?</label><textarea class="inp" id="rqm" rows="3" style="resize:vertical;font-family:inherit"></textarea>'+
+            '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" style="flex:1" onclick="submitRequest()">Send request</button>'+
+            '<button class="btn btn-outline" onclick="resetGate()">Cancel</button></div></div>'
+        : '<button class="btn btn-primary" style="width:100%;padding:12px;margin-bottom:9px" onclick="S.reqOpen=true;renderGate()">Request access</button>'+
+          '<button class="btn btn-outline" style="width:100%" onclick="resetGate()">Try another account</button>');
+    return;
+  }
+  box.innerHTML=GLOGO+
+    '<h1 style="font-size:23px;font-weight:900;margin-bottom:5px">'+APP_NAME+' <span class="vchip big">v'+APP_V+'</span></h1>'+
+    '<p style="font-size:13.5px;color:#6B7280;margin-bottom:26px">Return and Refund</p>'+
+    '<button class="btn" id="gbtn" onclick="signIn()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:11px;padding:13px;border-radius:12px;border:1.5px solid #E5E7EB;background:#fff;font-size:14.5px;color:#3C4043">'+
+    GBTN+'<span>Sign in with Google</span></button>'+
+    '<p style="font-size:11px;color:#9CA3AF;margin-top:18px;line-height:1.6">Access is limited to accounts on the namelist.</p>';
+}
+function resetGate(){S.denied=null;S.reqOpen=false;S.reqDone=false;renderGate()}
+
+async function signIn(){
+  if(!READY){toast('Still connecting to Firebase');return}
+  const b=$('gbtn'); if(b){b.disabled=true;b.querySelector('span').textContent='Signing in…'}
+  try{
+    const provider=new A.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:'select_account'});
+    await A.signInWithPopup(A.auth,provider);
+  }catch(err){
+    if(b){b.disabled=false;b.querySelector('span').textContent='Sign in with Google'}
+    if(String(err.code)!=='auth/popup-closed-by-user')fail('Sign-in',err);
+  }
+}
+
+async function afterAuth(user){
+  const email=(user.email||'').toLowerCase();
+  let snap=null;
+  try{ snap=await A.getDoc(A.doc(A.db,'people',email)); }
+  catch(err){ /* rules deny reads for unknown accounts — treat as not listed */ }
+  if(!snap||!snap.exists()||!(snap.data().bpos||[]).length){
+    try{ await A.addDoc(A.collection(A.db,'denied'),{email:email,at:Date.now()}); }catch(e){}
+    await A.signOut(A.auth).catch(()=>{});
+    S.deniedAuthEmail=email; S.denied=email; S.reqOpen=false; S.reqDone=false;
+    $('gate').style.display='flex';$('sidebar').style.display='none';$('main').style.display='none';
+    renderGate();
+    return;
+  }
+  const d=snap.data();
+  S.me=email; S.denied=null;
+  S.view=d.bpos.length>1?'__all':d.bpos[0];
+  S.tab='home';
+  PEOPLE.length=0;
+  PEOPLE.push({e:email,n:d.name||email,o:d.org||IH,r:d.designation||'Agent',bpos:d.bpos,adm:!!d.adm,sup:!!d.sup});
+  $('gate').style.display='none';$('sidebar').style.display='flex';$('main').style.display='block';
+  busy('Loading the repository…');
+  await loadAll();
+  logEv('login');
+  render();
+}
+function signOut(){
+  if(READY&&A.auth&&A.auth.currentUser)A.signOut(A.auth).catch(()=>{});
+  S.me=null;S.adminOpen=S.superOpen=S.bpoOpen=false;S.denied=null;S.open=null;
+  if($('modal'))$('modal').innerHTML='';
+  $('gate').style.display='flex';$('sidebar').style.display='none';$('main').style.display='none';
+  renderGate();
+}
+
+/* ─── loading ─── */
+async function loadAll(){
+  const me0=me();
+  // entries: everything this person's BPOs can see
+  try{
+    const auds=['all'].concat(me0.bpos);
+    const q=A.query(A.collection(A.db,'entries'),A.where('audience','in',auds));
+    const snap=await A.getDocs(q);
+    ENTRIES.length=0;
+    snap.forEach(dd=>{
+      const x=dd.data();
+      ENTRIES.push({id:dd.id,ref:x.ref||dd.id,m:x.module,aud:x.audience,st:x.status||'pub',
+        date:x.date,title:x.title||'',body:x.body||'',by:x.sharedBy||'',tag:x.tag||'',cat:x.category||'',
+        flow:x.flow||'',score:x.score||'',follow:x.follow||'',link:x.link||'',media:x.media||[],
+        pb:x.publishedBy||'',pa:x.publishedAt||'',src:x.source||''});
+    });
+    ENTRIES.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  }catch(err){fail('Loading entries',err)}
+
+  // acknowledgements
+  ACKDOCS={};
+  Object.keys(ACKS).forEach(k=>delete ACKS[k]);
+  try{
+    if(isAdmin()){
+      const snap=await A.getDocs(A.collection(A.db,'acks'));
+      snap.forEach(dd=>{ACKDOCS[dd.id]=dd.data().items||{}});
+    }else{
+      const dd=await A.getDoc(A.doc(A.db,'acks',S.me));
+      ACKDOCS[S.me]=dd.exists()?(dd.data().items||{}):{};
+    }
+  }catch(err){fail('Loading acknowledgements',err)}
+  Object.keys(ACKDOCS).forEach(k=>{ACKS[k]=new Set(Object.keys(ACKDOCS[k]))});
+  if(!ACKS[S.me])ACKS[S.me]=new Set();
+
+  // namelist — admins only
+  if(isAdmin()){
+    try{
+      const snap=await A.getDocs(A.collection(A.db,'people'));
+      const mine=PEOPLE[0];
+      PEOPLE.length=0;
+      snap.forEach(dd=>{
+        const x=dd.data();
+        PEOPLE.push({e:dd.id,n:x.name||dd.id,o:x.org||IH,r:x.designation||'Agent',
+                     bpos:x.bpos||[],adm:!!x.adm,sup:!!x.sup});
+      });
+      if(!findPerson(S.me))PEOPLE.push(mine);
+    }catch(err){fail('Loading the namelist',err)}
+    Object.keys(MAIL).forEach(k=>delete MAIL[k]);
+    seedMail();
+    try{
+      const snap=await A.getDocs(A.query(A.collection(A.db,'events'),A.orderBy('at','desc'),A.limit(1000)));
+      EVENTS.length=0;
+      snap.forEach(dd=>{const x=dd.data();EVENTS.push({t:x.at,k:x.k,w:x.who,id:x.entryId||null,b:x.bpo||null})});
+    }catch(err){/* index may still be building — traffic just shows acks */}
+    try{
+      const snap=await A.getDocs(A.query(A.collection(A.db,'nudges'),A.orderBy('at','desc'),A.limit(50)));
+      REMLOG.length=0;
+      snap.forEach(dd=>{const x=dd.data();REMLOG.push({t:x.at,by:x.by,n:x.n,bpo:x.bpo});
+        (x.to||[]).forEach(e=>{if(MAIL[e])MAIL[e].last=Math.max(MAIL[e].last||0,x.at)});});
+    }catch(err){}
+    try{
+      const snap=await A.getDocs(A.collection(A.db,'questions'));
+      QUESTIONS.length=0;
+      snap.forEach(dd=>{const x=dd.data();QUESTIONS.push({qid:dd.id,id:x.entryId,by:x.by,q:x.text})});
+    }catch(err){}
+  }
+
+  // acknowledgement timestamps become the traffic baseline
+  Object.keys(ACKDOCS).forEach(em=>{
+    const items=ACKDOCS[em];
+    Object.keys(items).forEach(id=>{
+      const t=items[id];
+      if(t)EVENTS.push({t:t,k:'ack',w:em,id:id});
+    });
+  });
+  EVENTS.sort((a,b)=>b.t-a.t);
+  recalcLast();
+
+  if(isSuper()){
+    try{
+      const snap=await A.getDocs(A.collection(A.db,'requests'));
+      REQUESTS.length=0;
+      snap.forEach(dd=>{const x=dd.data();REQUESTS.push({rid:dd.id,e:x.email,n:x.name,bpo:x.bpo,
+        desig:x.designation,note:x.note,t:x.at,st:x.status,by:x.decidedBy})});
+      REQUESTS.sort((a,b)=>b.t-a.t);
+    }catch(err){}
+    try{
+      const snap=await A.getDocs(A.query(A.collection(A.db,'denied'),A.orderBy('at','desc'),A.limit(50)));
+      DENIED.length=0;
+      snap.forEach(dd=>{const x=dd.data();DENIED.push({e:x.email,t:x.at})});
+    }catch(err){}
+    try{
+      const dd=await A.getDoc(A.doc(A.db,'meta','orphans'));
+      ORPHANS=dd.exists()?(dd.data().rows||[]).map(r=>({e:r.email,ids:r.ids,why:r.why})):[];
+    }catch(err){}
+  }
+}
+
+/* ─── undo: one action, one inverse ─── */
+let UNDOFN=null;
+function snap(){/* superseded — each mutation registers its own inverse */}
+function setUndo(fn){UNDOFN=fn}
+async function doUndo(){
+  if(!UNDOFN)return;
+  const fn=UNDOFN; UNDOFN=null;
+  $('toast').style.display='none';
+  try{await fn();toast('Reverted');}catch(err){fail('Undo',err)}
+  render();
+}
+
+/* ─── writes ─── */
+function logEv(k,id,b){
+  if(!READY||!S.me)return;
+  const ev={k:k,who:S.me,entryId:id||null,bpo:b||null,at:Date.now()};
+  EVENTS.unshift({t:ev.at,k:k,w:S.me,id:id||null,b:b||null});
+  A.addDoc(A.collection(A.db,'events'),ev).catch(()=>{});
+}
+
+async function ack(id,ev){
+  if(ev)ev.stopPropagation();
+  if(mine().has(id))return;
+  const t=Date.now();
+  mine().add(id);
+  if(!ACKDOCS[S.me])ACKDOCS[S.me]={};
+  ACKDOCS[S.me][id]=t;
+  render();
+  try{
+    await A.setDoc(A.doc(A.db,'acks',S.me),{email:S.me,items:{[id]:t}},{merge:true});
+    logEv('ack',id);
+    setUndo(async()=>{
+      mine().delete(id); delete ACKDOCS[S.me][id];
+      await A.updateDoc(A.doc(A.db,'acks',S.me),{['items.'+id]:A.deleteField()});
+    });
+    toast('Acknowledged',true);
+  }catch(err){mine().delete(id);render();fail('Acknowledging',err)}
+}
+
+async function askQ(id,ev){
+  if(ev)ev.stopPropagation();
+  const text=prompt('What is your question about this entry?');
+  if(!text||!text.trim())return;
+  try{
+    const r=await A.addDoc(A.collection(A.db,'questions'),{entryId:id,by:S.me,text:text.trim(),at:Date.now()});
+    QUESTIONS.push({qid:r.id,id:id,by:S.me,q:text.trim()});
+    setUndo(async()=>{
+      await A.deleteDoc(A.doc(A.db,'questions',r.id));
+      const i=QUESTIONS.findIndex(q=>q.qid===r.id); if(i>=0)QUESTIONS.splice(i,1);
+    });
+    toast('Question sent',true);render();
+  }catch(err){fail('Sending the question',err)}
+}
+
+async function nextIdFB(m,aud){
+  const key=m+'_'+aud;
+  const n=await A.runTransaction(A.db,async tx=>{
+    const ref=A.doc(A.db,'counters',key);
+    const d=await tx.get(ref);
+    const next=(d.exists()?(d.data().n||0):0)+1;
+    tx.set(ref,{n:next});
+    return next;
+  });
+  return {ref:m+'-'+n,id:(PFX[aud]||'X')+'-'+m+'-'+n};
+}
+
+async function saveEntry(publish){
+  const d=S.edit;
+  if(!d.title.trim()||!d.body.trim()||!d.date){S.err='Title, summary and date are all required.';renderMain();return}
+  const wasNew=S.editNew;
+  try{
+    let id=d.id, ref=d.ref;
+    if(wasNew){const n=await nextIdFB(d.m,d.aud);id=n.id;ref=n.ref}
+    const payload={ref:ref,module:d.m,audience:d.aud,status:publish?'pub':'draft',date:d.date,
+      title:d.title,body:d.body,category:d.cat||'',tag:d.tag||'',flow:d.flow||'',score:d.score||'',
+      follow:d.follow||'',sharedBy:d.by||'',link:d.link||'',media:d.media||[],
+      publishedBy:S.me,publishedAt:Date.now(),source:d.src||''};
+    const before=wasNew?null:Object.assign({},ENTRIES.find(e=>e.id===id));
+    await A.setDoc(A.doc(A.db,'entries',id),payload,{merge:true});
+    const local={id:id,ref:ref,m:d.m,aud:d.aud,st:payload.status,date:d.date,title:d.title,body:d.body,
+      by:d.by,tag:d.tag,cat:d.cat,flow:d.flow,score:d.score,follow:d.follow,link:d.link,
+      media:d.media,pb:S.me,pa:payload.publishedAt,src:d.src};
+    if(wasNew)ENTRIES.unshift(local); else ENTRIES[ENTRIES.findIndex(e=>e.id===id)]=local;
+    logEv(publish?(wasNew?'publish':'edit'):'draft',id,d.aud);
+    S.edit=null;S.orig=null;
+    setUndo(async()=>{
+      if(wasNew){await A.deleteDoc(A.doc(A.db,'entries',id));const i=ENTRIES.findIndex(e=>e.id===id);if(i>=0)ENTRIES.splice(i,1)}
+      else{await A.setDoc(A.doc(A.db,'entries',id),{status:before.st,title:before.title,body:before.body},{merge:true});
+           ENTRIES[ENTRIES.findIndex(e=>e.id===id)]=before}
+    });
+    toast((publish?'Published ':'Saved ')+ref,true);render();
+  }catch(err){fail('Saving the entry',err)}
+}
+
+async function setStatus(id,st,label){
+  const e=ENTRIES.find(x=>x.id===id),prev=e.st;
+  try{
+    await A.updateDoc(A.doc(A.db,'entries',id),{status:st,publishedBy:S.me,publishedAt:Date.now()});
+    e.st=st;e.pb=S.me;
+    logEv(st==='pub'?'publish':'unpublish',id,e.aud);
+    setUndo(async()=>{await A.updateDoc(A.doc(A.db,'entries',id),{status:prev});e.st=prev});
+    toast(label,true);render();
+  }catch(err){fail('Updating the entry',err)}
+}
+function unpublish(id){setStatus(id,'draft','Unpublished')}
+function publishNow(id){const e=ENTRIES.find(x=>x.id===id);setStatus(id,'pub','Published '+rid(e))}
+
+async function delEntry(id){
+  const e=ENTRIES.find(x=>x.id===id);
+  const holders=Object.keys(ACKDOCS).filter(em=>ACKDOCS[em][id]);
+  if(!confirm('Delete this entry?\n\n'+holders.length+' acknowledgement(s) will no longer point at anything.'))return;
+  const copy=Object.assign({},e);
+  try{
+    await A.deleteDoc(A.doc(A.db,'entries',id));
+    logEv('delete',id,e.aud);
+    ENTRIES.splice(ENTRIES.findIndex(x=>x.id===id),1);
+    setUndo(async()=>{
+      await A.setDoc(A.doc(A.db,'entries',id),{ref:copy.ref,module:copy.m,audience:copy.aud,status:copy.st,
+        date:copy.date,title:copy.title,body:copy.body,category:copy.cat||'',tag:copy.tag||'',
+        sharedBy:copy.by||'',link:copy.link||'',media:copy.media||[],publishedBy:S.me,publishedAt:Date.now()});
+      ENTRIES.unshift(copy);
+    });
+    toast('Entry deleted',true);render();
+  }catch(err){fail('Deleting the entry',err)}
+}
+
+/* ─── namelist ─── */
+function personDoc(p){return {name:p.n,org:p.o,designation:p.r,bpos:p.bpos,adm:!!p.adm,sup:!!p.sup,
+  addedBy:S.me,addedAt:Date.now()}}
+async function writePerson(p){await A.setDoc(A.doc(A.db,'people',p.e),personDoc(p),{merge:true})}
+
+async function addPerson(){
+  const e=($('pe').value||'').trim().toLowerCase(),n=($('pn').value||'').trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){toast('Enter a valid email address');return}
+  if(findPerson(e)){toast('That address is already on the namelist');return}
+  const bp=BPOS.filter(b=>$('pb-'+b.replace(/\s/g,'')).checked);
+  if(!bp.length){toast('Tick at least one BPO or they cannot sign in');return}
+  const sup=$('pb-SUP').checked, adm=$('pb-ADM').checked||sup;
+  if(sup&&!confirm('Grant Super Admin?\n\nThey will be able to add and remove anyone, including you.'))return;
+  const p={e:e,n:n||e.split('@')[0],o:$('po').value,r:$('pr').value,bpos:bp,adm:adm,sup:sup};
+  try{
+    await writePerson(p);PEOPLE.push(p);seedMail();
+    setUndo(async()=>{await A.deleteDoc(A.doc(A.db,'people',e));
+      const i=PEOPLE.findIndex(x=>x.e===e);if(i>=0)PEOPLE.splice(i,1)});
+    toast('Added to the namelist',true);render();
+  }catch(err){fail('Adding the person',err)}
+}
+
+async function applyPaste(){
+  const r=parsePaste(S.paste);
+  if(!r.ok.length){toast('Nothing valid to import');return}
+  const inc={};r.ok.forEach(x=>inc[x.e]=x);
+  const removed=PEOPLE.filter(x=>!inc[x.e]);
+  const selfGone=removed.some(x=>x.e===S.me);
+  let msg='Replace the entire namelist?\n\n'+r.ok.filter(x=>!findPerson(x.e)).length+' added\n'+
+    r.ok.filter(x=>findPerson(x.e)).length+' kept or updated\n'+removed.length+' removed and locked out';
+  if(selfGone)msg+='\n\nYour own account is not in this list. It will be kept.';
+  if(!confirm(msg))return;
+  const backup=PEOPLE.map(x=>Object.assign({},x));
+  try{
+    let batch=A.writeBatch(A.db),n=0;
+    for(const x of removed){
+      if(x.e===S.me)continue;
+      batch.delete(A.doc(A.db,'people',x.e));
+      if(++n===400){await batch.commit();batch=A.writeBatch(A.db);n=0}
+    }
+    for(const x of r.ok){
+      batch.set(A.doc(A.db,'people',x.e),personDoc(x),{merge:true});
+      if(++n===400){await batch.commit();batch=A.writeBatch(A.db);n=0}
+    }
+    if(n)await batch.commit();
+    const self=findPerson(S.me);
+    PEOPLE.length=0;r.ok.forEach(x=>PEOPLE.push(x));
+    if(selfGone&&self)PEOPLE.push(self);
+    seedMail();S.paste='';
+    setUndo(async()=>{
+      let b2=A.writeBatch(A.db),m=0;
+      for(const x of backup){b2.set(A.doc(A.db,'people',x.e),personDoc(x),{merge:true});
+        if(++m===400){await b2.commit();b2=A.writeBatch(A.db);m=0}}
+      if(m)await b2.commit();
+      PEOPLE.length=0;backup.forEach(x=>PEOPLE.push(x));
+    });
+    toast('Namelist replaced — '+PEOPLE.length+' people',true);render();
+  }catch(err){fail('Replacing the namelist',err)}
+}
+
+async function patchPerson(email,patch,label){
+  const p=findPerson(email),before={bpos:p.bpos.slice(),adm:p.adm,sup:p.sup,r:p.r,o:p.o};
+  Object.assign(p,patch);
+  try{
+    await A.updateDoc(A.doc(A.db,'people',email),
+      {bpos:p.bpos,adm:!!p.adm,sup:!!p.sup,designation:p.r,org:p.o});
+    setUndo(async()=>{Object.assign(p,before);
+      await A.updateDoc(A.doc(A.db,'people',email),
+        {bpos:before.bpos,adm:before.adm,sup:before.sup,designation:before.r,org:before.o})});
+    toast(label,true);render();
+  }catch(err){Object.assign(p,before);fail('Updating access',err)}
+}
+function togBpo(email,b){
+  const p=findPerson(email),i=p.bpos.indexOf(b),bpos=p.bpos.slice();
+  if(i>=0)bpos.splice(i,1); else bpos.push(b);
+  if(email===S.me&&!bpos.length){toast('You cannot remove your own last BPO');return}
+  patchPerson(email,{bpos:bpos},'Access updated');
+  if(email===S.me)S.view=bpos.length>1?'__all':bpos[0];
+}
+function togSec(email,k){
+  const p=findPerson(email);
+  if(k==='sup'&&!p.sup&&!confirm('Grant Super Admin to '+p.n+'?\n\nThey will be able to add and remove anyone, including you.'))return;
+  if(email===S.me&&k==='sup'&&p.sup){toast('You cannot remove your own Super Admin access');return}
+  if(email===S.me&&k==='adm'&&p.adm&&!p.sup){toast('You cannot remove your own Admin access');return}
+  const patch={};patch[k]=!p[k];
+  if(k==='sup'&&patch.sup)patch.adm=true;
+  if(k==='adm'&&!patch.adm)patch.sup=false;
+  patchPerson(email,patch,'Section access updated');
+}
+function setRole(email,r){patchPerson(email,{r:r},'Designation updated')}
+function setOrg(email,o){patchPerson(email,{o:o},'Organisation updated')}
+async function removePerson(email){
+  if(email===S.me){toast('You cannot remove your own access');return}
+  if(!confirm('Remove '+email+'?\n\nThey lose access immediately. Acknowledgement history is kept.'))return;
+  const p=Object.assign({},findPerson(email));
+  try{
+    await A.deleteDoc(A.doc(A.db,'people',email));
+    PEOPLE.splice(PEOPLE.findIndex(x=>x.e===email),1);
+    setUndo(async()=>{await writePerson(p);PEOPLE.push(p)});
+    toast('Access removed',true);render();
+  }catch(err){fail('Removing the person',err)}
+}
+
+/* ─── access requests ─── */
+async function submitRequest(){
+  const n=($('rqn').value||'').trim(),b=$('rqb').value,d=$('rqd').value,note=($('rqm').value||'').trim();
+  if(!n){toast('Enter your full name');return}
+  if(!b){toast('Pick your BPO');return}
+  if(!d){toast('Pick your designation');return}
+  try{
+    // the requester is signed out by now, so sign back in just long enough to write
+    const provider=new A.GoogleAuthProvider();
+    provider.setCustomParameters({login_hint:S.denied,prompt:'none'});
+    await A.signInWithPopup(A.auth,provider).catch(()=>{});
+    await A.addDoc(A.collection(A.db,'requests'),
+      {email:S.denied,name:n,bpo:b,designation:d,note:note,at:Date.now(),status:'pending'});
+    await A.signOut(A.auth).catch(()=>{});
+  }catch(err){/* the request is best-effort; still confirm to the person */}
+  S.reqDone=true;renderGate();
+}
+async function approveReq(i){
+  const r=REQUESTS[i];
+  const bp=BPOS.filter(b=>$('rb-'+i+'-'+b.replace(/\s/g,'')).checked);
+  if(!bp.length){toast('Tick at least one BPO before approving');return}
+  const p={e:r.e,n:r.n,o:$('ro-'+i).value,r:$('rr-'+i).value,bpos:bp,adm:false,sup:false};
+  try{
+    await writePerson(p);
+    await A.updateDoc(A.doc(A.db,'requests',r.rid),{status:'approved',decidedBy:S.me,decidedAt:Date.now()});
+    if(!findPerson(p.e))PEOPLE.push(p); else Object.assign(findPerson(p.e),p);
+    r.st='approved';r.by=S.me;seedMail();
+    toast(r.n+' approved and added to the namelist');render();
+  }catch(err){fail('Approving',err)}
+}
+async function rejectReq(i){
+  const r=REQUESTS[i];
+  if(!confirm('Reject this request?\n\n'+r.e+' stays locked out.'))return;
+  try{
+    await A.updateDoc(A.doc(A.db,'requests',r.rid),{status:'rejected',decidedBy:S.me,decidedAt:Date.now()});
+    r.st='rejected';r.by=S.me;toast('Request rejected');render();
+  }catch(err){fail('Rejecting',err)}
+}
+
+/* ─── nudge ─── */
+async function doCopy(){
+  const ta=$('copyArea');
+  if(ta){ta.focus();ta.select()}
+  let ok=false;
+  try{ok=document.execCommand('copy')}catch(err){ok=false}
+  if(!ok&&navigator.clipboard&&ta){navigator.clipboard.writeText(ta.value).then(()=>{},()=>{});ok=true}
+  const to=(S.copyFor||[]).slice();
+  closeModal();
+  if(to.length){
+    const rec={by:S.me,n:to.length,to:to,bpo:viewLabel(),at:Date.now()};
+    markNudged(to);
+    REMLOG.unshift({t:rec.at,by:S.me,n:to.length,bpo:rec.bpo});
+    try{await A.addDoc(A.collection(A.db,'nudges'),rec)}catch(err){fail('Recording the nudge',err)}
+  }
+  toast(ok?'Copied — paste into the agent chat':'Select the text and press Ctrl+C');
+  render();
+}
+
+
+if(!READY)renderGate();
+</script>
+</body>
+</html>
