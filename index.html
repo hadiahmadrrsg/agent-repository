@@ -245,6 +245,13 @@ let QUESTIONS=[];
    the version number, the title in the sidebar, the gate, the browser tab and the
    history screen. Major = release day, minor = revisions within that same day. */
 const CHANGELOG=[
+{v:'3.8',d:'2026-08-17',by:'hadi.ahmad@shopee.com',notes:[
+ 'Fixed Coverage crashing when any agent in scope had no acknowledgements yet',
+ 'Traffic and publishing now has a BPO filter alongside the agent filter',
+ 'Copying a nudge reminder can now be undone from the toast — the agents return to the Ready list and the history record is removed',
+ 'Removed the one-time Import data screen from Super Admin',
+ 'Removed the "Acknowledgements that did not import" card from Access requests'
+]},
 {v:'3.7',d:'2026-08-17',by:'hadi.ahmad@shopee.com',notes:[
  '"Have a Feedback?" button in the sidebar, visible to everyone, sitting above Admin',
  'Feedback form with categories (General, Bug / Error, Feature Request, Content Suggestion, Other) — you can see your own past submissions',
@@ -308,8 +315,9 @@ function logEv(k,id,b){EVENTS.unshift({t:Date.now(),k:k,w:S.me,b:b,id:id})}
 
 let S={tab:'home',me:null,adminOpen:false,superOpen:false,bpoOpen:false,view:null,q:'',filter:'all',
   edit:null,orig:null,editNew:false,err:'',denied:null,reqOpen:false,reqDone:false,pickOpen:false,open:null,paste:'',copyText:'',copyLabel:'',copyFor:[],qopen:null,imp:'',impLog:[],
-  tfUser:'',tfSort:'total-desc',modal:null};
+  tfUser:'',tfBpo:'',tfSort:'total-desc',modal:null};
 let UNDO=null;
+let NUDGE_UNDO=null;
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -339,9 +347,16 @@ function toast(msg,u){
   t.innerHTML='<span>'+esc(msg)+'</span>'+(u?'<button class="u" onclick="doUndo()">Undo</button>':'');
   t.style.display='flex';clearTimeout(t._x);t._x=setTimeout(()=>{t.style.display='none'},u?7000:2400);
 }
-function snap(){UNDO={entries:JSON.parse(JSON.stringify(ENTRIES)),people:JSON.parse(JSON.stringify(PEOPLE)),
+function snap(){NUDGE_UNDO=null;UNDO={entries:JSON.parse(JSON.stringify(ENTRIES)),people:JSON.parse(JSON.stringify(PEOPLE)),
   qs:JSON.parse(JSON.stringify(QUESTIONS)),acks:Object.keys(ACKS).reduce((o,k)=>{o[k]=Array.from(ACKS[k]);return o},{})}}
 function doUndo(){
+  if(NUDGE_UNDO){
+    NUDGE_UNDO.prev.forEach(p=>{if(!MAIL[p.e])MAIL[p.e]={last:0};MAIL[p.e].last=p.last});
+    if(REMLOG.length&&REMLOG[0].t===NUDGE_UNDO.t)REMLOG.shift();
+    if(NUDGE_UNDO.rid)A.deleteDoc(A.doc(A.db,'nudges',NUDGE_UNDO.rid)).catch(()=>{});
+    NUDGE_UNDO=null;$('toast').style.display='none';
+    toast('Nudge undone — they are back in the list');render();return;
+  }
   if(!UNDO)return;
   ENTRIES.length=0;UNDO.entries.forEach(e=>ENTRIES.push(e));
   PEOPLE.length=0;UNDO.people.forEach(p=>PEOPLE.push(p));
@@ -427,7 +442,7 @@ function ack(id,ev){if(ev)ev.stopPropagation();if(mine().has(id))return;snap();m
 function askQ(id,ev){if(ev)ev.stopPropagation();snap();QUESTIONS.push({id:id,by:S.me,q:'(demo) Follow-up question raised from the entry card'});if(!mine().has(id))mine().add(id);toast('Question sent to '+MODULES[id.split('-')[0]].owner,true);render()}
 function go(t){S.tab=t;S.q='';S.filter='all';S.edit=null;S.open=null;render()}
 function toggleAdmin(){S.adminOpen=!S.adminOpen;if(S.adminOpen&&['manage','admin','chase','reminders','traffic','qs'].indexOf(S.tab)<0){S.tab='manage';S.edit=null}renderSide();renderMain()}
-function toggleSuper(){S.superOpen=!S.superOpen;if(S.superOpen&&['people','requests','fb','audit','import','versions'].indexOf(S.tab)<0){S.tab='people';S.edit=null}renderSide();renderMain()}
+function toggleSuper(){S.superOpen=!S.superOpen;if(S.superOpen&&['people','requests','fb','audit','versions'].indexOf(S.tab)<0){S.tab='people';S.edit=null}renderSide();renderMain()}
 function toggleBpo(){if(!multiBpo())return;S.bpoOpen=!S.bpoOpen;renderSide()}
 function setView(v){S.view=v;S.bpoOpen=false;S.q='';render();toast('Viewing '+viewLabel())}
 function setQ(v){S.q=v.toLowerCase();renderMain()}
@@ -521,7 +536,7 @@ function renderSide(){
 
   if(isSuper()){
     const open=S.superOpen,pend=REQUESTS.filter(r=>r.st==='pending').length;
-    const t=[{k:'people',l:'People and access',c:PEOPLE.length},{k:'requests',l:'Access requests',c:pend},{k:'fb',l:'Feedback',c:FEEDBACK.length},{k:'audit',l:'Traffic and publishing'},{k:'import',l:'Import data'},{k:'versions',l:'Version history'}];
+    const t=[{k:'people',l:'People and access',c:PEOPLE.length},{k:'requests',l:'Access requests',c:pend},{k:'fb',l:'Feedback',c:FEEDBACK.length},{k:'audit',l:'Traffic and publishing'},{k:'versions',l:'Version history'}];
     $('nav-super').innerHTML='<button class="nav-btn sup-head '+(open?'open':'')+'" onclick="toggleSuper()"><span class="chev">'+(open?'▾':'▸')+'</span><span class="label">Super Admin</span>'+(!open&&pend?'<span class="count">'+pend+'</span>':'')+'</button>'+
       (open?'<div class="adm-body sup">'+t.map(x=>'<button class="nav-btn sub '+(S.tab===x.k?'active':'')+'" onclick="go(\''+x.k+'\')"><span class="label">'+x.l+'</span>'+(x.c?'<span class="count">'+x.c+'</span>':'')+'</button>').join('')+'</div>':'');
   } else $('nav-super').innerHTML='';
@@ -769,7 +784,7 @@ function rAdmin(){
   peers.forEach(a=>{
     const own=forBpo(a.o),n=own.filter(e=>ACKS[a.e]&&ACKS[a.e].has(e.id)).length;
     h+='<tr><td class="who">'+esc(a.n)+'</td>'+(multi?'<td style="font-size:11px;color:#9CA3AF">'+esc(a.o)+'</td>':'')+
-      list.map(e=>own.indexOf(e)<0?'<td><span style="color:#E5E7EB">–</span></td>':'<td><span class="dot '+(ACKS[a.e].has(e.id)?'y':'n')+'">'+(ACKS[a.e].has(e.id)?'✓':'·')+'</span></td>').join('')+
+      list.map(e=>own.indexOf(e)<0?'<td><span style="color:#E5E7EB">–</span></td>':'<td><span class="dot '+((ACKS[a.e]&&ACKS[a.e].has(e.id))?'y':'n')+'">'+((ACKS[a.e]&&ACKS[a.e].has(e.id))?'✓':'·')+'</span></td>').join('')+
       '<td style="font-family:Nunito;font-weight:800;font-size:12px;color:'+(n===own.length?'#059669':'#EE4D2D')+'">'+pct(n,own.length)+'</td></tr>';
   });
   return h+'</tbody></table></div>';
@@ -798,6 +813,7 @@ function tfEvents(all){
     const p=findPerson(v.w);
     return p&&p.bpos.some(b=>s.indexOf(b)>=0);
   });
+  if(all&&S.tfBpo)evs=evs.filter(v=>{const p=findPerson(v.w);return(p&&p.o===S.tfBpo)||v.b===S.tfBpo});
   if(S.tfUser)evs=evs.filter(v=>v.w===S.tfUser);
   return evs;
 }
@@ -862,6 +878,7 @@ function tfPodium(){
       '<div class="stand" style="height:'+hts[i]+'px;background:linear-gradient(180deg,'+col[i]+','+col[i]+'bb)"><span style="font-size:15px;font-weight:900;color:#fff;opacity:.85;font-family:Nunito">'+(i+1)+'</span></div></div>').join('')+'</div>';
 }
 function setTfUser(v){S.tfUser=v;renderMain()}
+function setTfBpo(v){S.tfBpo=v;S.tfUser='';renderMain()}
 function setTfSort(v){S.tfSort=v;renderMain()}
 function tfTable(evs,peers){
   const today=dayKey(NOW),by={};
@@ -893,7 +910,9 @@ function tfTable(evs,peers){
     '</tbody></table>';
 }
 function rTraffic(all){
-  const evs=tfEvents(all),peers=all?PEOPLE.filter(p=>p.r==='Agent'):scopeAgents();
+  const evs=tfEvents(all);
+  let peers=all?PEOPLE.filter(p=>p.r==='Agent'):scopeAgents();
+  if(all&&S.tfBpo)peers=peers.filter(p=>p.o===S.tfBpo);
   const views=evs.filter(v=>v.k==='view'||v.k==='ack');
   const today=dayKey(LASTEV);
   const tdy=views.filter(v=>dayKey(new Date(v.t))===today).length;
@@ -903,9 +922,11 @@ function rTraffic(all){
   const users=[''].concat(peers.map(p=>p.e));
   let h='<div class="card" style="padding:14px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
     '<span style="font-size:12px;font-weight:800;font-family:Nunito;color:#6B7280">Filter</span>'+
+    (all?'<select class="inp" style="width:auto;min-width:150px" onchange="setTfBpo(this.value)">'+
+      [''].concat(BPOS).map(b=>'<option value="'+b+'"'+(S.tfBpo===b?' selected':'')+'>'+(b||'All BPOs')+'</option>').join('')+'</select>':'')+
     '<select class="inp" style="width:auto;min-width:200px" onchange="setTfUser(this.value)">'+
       users.map(u=>'<option value="'+u+'"'+(S.tfUser===u?' selected':'')+'>'+(u?esc(nameOf(u)):'All agents')+'</option>').join('')+'</select>'+
-    (S.tfUser?'<button class="btn btn-outline btn-xs" onclick="setTfUser(\'\')">Clear</button>':'')+
+    ((S.tfUser||(all&&S.tfBpo))?'<button class="btn btn-outline btn-xs" onclick="setTfBpo(\'\')">Clear</button>':'')+
     '<span style="font-size:11.5px;color:#9CA3AF;margin-left:auto">Hover any bar or cell for detail</span></div>';
   h+='<div class="stat-grid">'+
     '<div class="card"><div class="stat-label">Total actions</div><div class="stat-val">'+views.length+'</div><div class="stat-note">all time</div></div>'+
@@ -1194,12 +1215,7 @@ function rRequests(){
           '<div style="font-size:11px;color:#9CA3AF">'+esc(x.r.e)+'</div></div></div>';
       }).join('')+'</div>';
   }
-  h+='<div class="card" style="padding:8px 0"><div style="font-family:Nunito;font-weight:800;font-size:15px;padding:10px 14px 4px">Acknowledgements that did not import</div>'+
-    '<div style="font-size:12px;color:#9CA3AF;padding:0 14px 8px">Rows found in the old Google Form tracker that could not be matched to a person or an entry. Nothing was silently dropped.</div>'+
-    ORPHANS.map(o=>'<div class="log"><span class="ic" style="background:#FEF2F2;color:#DC2626">!</span>'+
-      '<div style="flex:1"><div style="font-size:12.5px">'+esc(o.e)+' — '+esc(o.ids.join(', '))+'</div>'+
-      '<div style="font-size:11px;color:#9CA3AF">'+esc(o.why)+'</div></div></div>').join('')+'</div>';
-  h+='<div class="card" style="padding:8px 0"><div style="font-family:Nunito;font-weight:800;font-size:15px;padding:10px 14px 4px">Blocked sign-in attempts</div>'+
+  h+='<div class="card" style="padding:8px 0"><div style="font-family:Nunito;font-weight:800;font-size:15px;padding:10px 14px 6px">Blocked sign-in attempts</div>'+
     '<div style="font-size:12px;color:#9CA3AF;padding:0 14px 8px">Every refused sign-in is logged, whether or not they asked for access.</div>'+
     DENIED.slice(0,12).map(d=>'<div class="log"><span class="ic" style="background:#F3F4F6;color:#6B7280">×</span>'+
       '<div style="flex:1"><div style="font-size:12.5px">'+esc(d.e)+'</div>'+
@@ -1397,7 +1413,6 @@ function renderMain(){
     case 'requests':m.innerHTML=SU?rRequests():rHome();break;
     case 'fb':m.innerHTML=SU?rSuperFeedback():rHome();break;
     case 'audit':m.innerHTML=SU?rAudit():rHome();break;
-    case 'import':m.innerHTML=SU?rImport():rHome();break;
     case 'versions':m.innerHTML=SU?rVersions():rHome();break;
     default:m.innerHTML=rModule(S.tab);
   }
@@ -2015,11 +2030,15 @@ async function doCopy(){
   closeModal();
   if(to.length){
     const rec={by:S.me,n:to.length,to:to,bpo:viewLabel(),at:Date.now()};
+    const prev=to.map(e=>({e:e,last:(MAIL[e]&&MAIL[e].last)||0}));
     markNudged(to);
     REMLOG.unshift({t:rec.at,by:S.me,n:to.length,bpo:rec.bpo});
-    try{await A.addDoc(A.collection(A.db,'nudges'),rec)}catch(err){fail('Recording the nudge',err)}
+    UNDO=null;NUDGE_UNDO={prev:prev,t:rec.at,rid:null};
+    try{const r=await A.addDoc(A.collection(A.db,'nudges'),rec);if(NUDGE_UNDO)NUDGE_UNDO.rid=r.id}catch(err){fail('Recording the nudge',err)}
+    toast(ok?'Copied — paste into the agent chat':'Select the text and press Ctrl+C',true);
+  }else{
+    toast(ok?'Copied — paste into the agent chat':'Select the text and press Ctrl+C');
   }
-  toast(ok?'Copied — paste into the agent chat':'Select the text and press Ctrl+C');
   render();
 }
 
