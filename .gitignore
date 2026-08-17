@@ -1,0 +1,12 @@
+# Never commit credentials
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
+.firebaserc
+
+# Installed libraries — not needed in the repo
+node_modules/
+package-lock.json
+
+# Local Firebase cache
+.firebase/
+firebase-debug.log
