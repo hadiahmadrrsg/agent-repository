@@ -1,0 +1,22 @@
+name: Deploy to Firebase Hosting
+
+# Runs every time index.html (or anything else) is pushed to the main branch.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # also lets you run it by hand from the Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the files
+        uses: actions/checkout@v4
+
+      - name: Publish to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: agent-repository-c4dac
+          channelId: live
