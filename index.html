@@ -165,12 +165,13 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 
 <div id="sidebar" style="display:none">
   <div class="logo-row">
-    <div class="logo-icon"><svg width="21" height="21" viewBox="0 0 120 120"><path d="M60 16c-8 0-15 4.5-18.5 11.2h37C75 20.5 68 16 60 16z" fill="#fff"/><path d="M41 26h-1.5c-.5 0-1 .1-1.4.3A27.5 27.5 0 0032 28v.5l3 56c.3 5 4.5 9 9.5 9h31c5 0 9.2-4 9.5-9l3-56V28a27 27 0 00-6-1.7c-.5-.2-1-.3-1.5-.3H79" fill="#fff"/></svg></div>
+    <div class="logo-icon"><svg width="22" height="22" viewBox="0 0 100 100"><path d="M37 34v-6a13 13 0 0126 0v6" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/><path d="M27 32h46l4 47a9 9 0 01-9 10H32a9 9 0 01-9-10l4-47z" fill="#fff"/><text x="50" y="74" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-size="35" font-weight="900" fill="#EE4D2D">S</text></svg></div>
     <div><div class="logo-title" id="appTitle">Agent Repository</div><div class="logo-sub">Return and Refund</div></div>
   </div>
   <div id="who" style="padding:0 6px 10px"></div>
   <div id="nav"></div>
   <div style="flex:1"></div>
+  <div id="nav-fb"></div>
   <div id="nav-admin"></div>
   <div id="nav-super"></div>
   <div class="sync"><i></i><span>Live · Firebase</span></div>
@@ -244,6 +245,22 @@ let QUESTIONS=[];
    the version number, the title in the sidebar, the gate, the browser tab and the
    history screen. Major = release day, minor = revisions within that same day. */
 const CHANGELOG=[
+{v:'3.7',d:'2026-08-17',by:'hadi.ahmad@shopee.com',notes:[
+ '"Have a Feedback?" button in the sidebar, visible to everyone, sitting above Admin',
+ 'Feedback form with categories (General, Bug / Error, Feature Request, Content Suggestion, Other) — you can see your own past submissions',
+ 'New Feedback screen under Super Admin showing every submission with category counts',
+ 'Feedback is stored in a new Firestore "feedback" collection'
+]},
+{v:'3.6',d:'2026-08-17',by:'hadi.ahmad@shopee.com',notes:[
+ 'Sidebar and sign-in icon changed to the Shopee bag-with-S logo',
+ 'Removed the "Or add one person" form — the namelist is managed only through Paste from Excel'
+]},
+{v:'3.5',d:'2026-08-17',by:'hadi.ahmad@shopee.com',notes:[
+ 'Paste from Excel now recognises In House as an organisation regardless of spacing or hyphens (In-House, InHouse, in house)',
+ 'In House rows with an empty Section access column are granted all BPO sections instead of being rejected',
+ 'Writing In House in the access column also grants all sections; BPO names match ignoring spaces (e.g. AsiaRecruit)',
+ 'Rows with a blank organisation column now fall back to a guess from the email domain (@shopee.com → In House)'
+]},
 {v:'3.4',d:'2026-08-17',by:'hadi.ahmad@shopee.com',notes:[
  'Hosted on GitHub Pages — updates are made by editing the file in GitHub',
  'Removed the prototype banner and the leftover test-account picker',
@@ -264,6 +281,12 @@ const APP_NAME='Agent Repository';
 /* ─── access requests and denied attempts ─── */
 let REQUESTS=[];
 let DENIED=[];
+
+/* ─── feedback ─── */
+/* everyone can submit; each person sees their own, Super Admin sees all */
+let FEEDBACK=[];
+const FB_CATS=['General','Bug / Error','Feature Request','Content Suggestion','Other'];
+const fbColor=c=>c==='Bug / Error'?['#DC2626','#FEF2F2']:c==='Feature Request'?['#2563EB','#EFF6FF']:c==='Content Suggestion'?['#7C3AED','#F5F3FF']:c==='Other'?['#6B7280','#F3F4F6']:['#059669','#ECFDF5'];
 
 /* ─── nudge tracking ─── */
 /* last = when this person was last nudged, used for the cooldown */
@@ -330,7 +353,7 @@ function doUndo(){
 
 /* ─── sign in ─── */
 const GLOGO='<div style="width:66px;height:66px;border-radius:18px;background:#EE4D2D;display:flex;align-items:center;justify-content:center;margin:0 auto 18px">'+
-  '<svg width="34" height="34" viewBox="0 0 120 120"><path d="M60 16c-8 0-15 4.5-18.5 11.2h37C75 20.5 68 16 60 16z" fill="#fff"/><path d="M41 26h-1.5c-.5 0-1 .1-1.4.3A27.5 27.5 0 0032 28v.5l3 56c.3 5 4.5 9 9.5 9h31c5 0 9.2-4 9.5-9l3-56V28a27 27 0 00-6-1.7c-.5-.2-1-.3-1.5-.3H79" fill="#fff"/></svg></div>';
+  '<svg width="38" height="38" viewBox="0 0 100 100"><path d="M37 34v-6a13 13 0 0126 0v6" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/><path d="M27 32h46l4 47a9 9 0 01-9 10H32a9 9 0 01-9-10l4-47z" fill="#fff"/><text x="50" y="74" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-size="35" font-weight="900" fill="#EE4D2D">S</text></svg></div>';
 const GBTN='<svg width="19" height="19" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
 
 function renderGate(){
@@ -404,7 +427,7 @@ function ack(id,ev){if(ev)ev.stopPropagation();if(mine().has(id))return;snap();m
 function askQ(id,ev){if(ev)ev.stopPropagation();snap();QUESTIONS.push({id:id,by:S.me,q:'(demo) Follow-up question raised from the entry card'});if(!mine().has(id))mine().add(id);toast('Question sent to '+MODULES[id.split('-')[0]].owner,true);render()}
 function go(t){S.tab=t;S.q='';S.filter='all';S.edit=null;S.open=null;render()}
 function toggleAdmin(){S.adminOpen=!S.adminOpen;if(S.adminOpen&&['manage','admin','chase','reminders','traffic','qs'].indexOf(S.tab)<0){S.tab='manage';S.edit=null}renderSide();renderMain()}
-function toggleSuper(){S.superOpen=!S.superOpen;if(S.superOpen&&['people','requests','audit','import','versions'].indexOf(S.tab)<0){S.tab='people';S.edit=null}renderSide();renderMain()}
+function toggleSuper(){S.superOpen=!S.superOpen;if(S.superOpen&&['people','requests','fb','audit','import','versions'].indexOf(S.tab)<0){S.tab='people';S.edit=null}renderSide();renderMain()}
 function toggleBpo(){if(!multiBpo())return;S.bpoOpen=!S.bpoOpen;renderSide()}
 function setView(v){S.view=v;S.bpoOpen=false;S.q='';render();toast('Viewing '+viewLabel())}
 function setQ(v){S.q=v.toLowerCase();renderMain()}
@@ -485,6 +508,8 @@ function renderSide(){
   $('nav').innerHTML='<div class="nav-sect">Repository · unread</div>'+tabs.map(t=>
     '<button class="nav-btn '+(S.tab===t.k?'active':'')+'" onclick="go(\''+t.k+'\')"><span class="label">'+t.l+'</span><span class="count '+(t.c?'':'zero')+'">'+t.c+'</span></button>').join('');
 
+  $('nav-fb').innerHTML='<button class="nav-btn '+(S.tab==='feedback'?'active':'')+'" onclick="go(\'feedback\')"><span class="label">💬 Have a Feedback?</span></button>';
+
   if(isAdmin()){
     const s=scopeList(),drafts=ENTRIES.filter(e=>e.st==='draft'&&inScope(e)).length,open=S.adminOpen;
     const qn=QUESTIONS.filter(q=>{const e=ENTRIES.find(x=>x.id===q.id);return e&&inScope(e)}).length;
@@ -496,7 +521,7 @@ function renderSide(){
 
   if(isSuper()){
     const open=S.superOpen,pend=REQUESTS.filter(r=>r.st==='pending').length;
-    const t=[{k:'people',l:'People and access',c:PEOPLE.length},{k:'requests',l:'Access requests',c:pend},{k:'audit',l:'Traffic and publishing'},{k:'import',l:'Import data'},{k:'versions',l:'Version history'}];
+    const t=[{k:'people',l:'People and access',c:PEOPLE.length},{k:'requests',l:'Access requests',c:pend},{k:'fb',l:'Feedback',c:FEEDBACK.length},{k:'audit',l:'Traffic and publishing'},{k:'import',l:'Import data'},{k:'versions',l:'Version history'}];
     $('nav-super').innerHTML='<button class="nav-btn sup-head '+(open?'open':'')+'" onclick="toggleSuper()"><span class="chev">'+(open?'▾':'▸')+'</span><span class="label">Super Admin</span>'+(!open&&pend?'<span class="count">'+pend+'</span>':'')+'</button>'+
       (open?'<div class="adm-body sup">'+t.map(x=>'<button class="nav-btn sub '+(S.tab===x.k?'active':'')+'" onclick="go(\''+x.k+'\')"><span class="label">'+x.l+'</span>'+(x.c?'<span class="count">'+x.c+'</span>':'')+'</button>').join('')+'</div>':'');
   } else $('nav-super').innerHTML='';
@@ -1029,6 +1054,70 @@ function rVersions(){
   return h;
 }
 
+/* ─── feedback ─── */
+function rFeedback(){
+  const p=me();
+  const mine=FEEDBACK.filter(f=>f.e===S.me).slice().sort((a,b)=>b.t-a.t);
+  let h=ctxBar()+'<div class="pg-title">💬 Have a Feedback?</div><div class="pg-sub">Share ideas, report issues, or suggest improvements. Every message goes straight to the Super Admin.</div>';
+  h+='<div class="card">'+
+    '<div style="display:grid;grid-template-columns:220px 1fr;gap:11px;margin-bottom:12px">'+
+      '<div><label class="flab">Category</label><select class="inp" id="fb-cat">'+FB_CATS.map(c=>'<option>'+c+'</option>').join('')+'</select></div>'+
+      '<div style="display:flex;align-items:flex-end;font-size:12px;color:#9CA3AF;padding-bottom:9px">Submitting as <b style="color:#6B7280;margin:0 4px">'+esc(p.n)+'</b> · '+esc(p.o)+' · '+esc(viewLabel())+'</div>'+
+    '</div>'+
+    '<label class="flab">Your feedback</label>'+
+    '<textarea class="inp" id="fb-text" rows="5" style="resize:vertical;line-height:1.6" placeholder="What is working well? What could be better?"></textarea>'+
+    '<div style="display:flex;margin-top:12px"><button class="btn btn-primary" style="margin-left:auto" onclick="submitFeedback()">Send feedback</button></div>'+
+  '</div>';
+  if(mine.length){
+    h+='<div style="font-family:Nunito;font-weight:800;font-size:15px;margin:6px 0 10px">Your previous feedback ('+mine.length+')</div>'+
+      mine.map(f=>{const cc=fbColor(f.cat);
+        return '<div class="card" style="border-left:4px solid '+cc[0]+'">'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap">'+
+            '<span class="badge" style="background:'+cc[1]+';color:'+cc[0]+'">'+esc(f.cat)+'</span>'+
+            '<span style="font-size:11px;color:#9CA3AF">'+fmtT(f.t)+(f.bpo?' · '+esc(f.bpo):'')+'</span></div>'+
+          '<div style="font-size:13.5px;color:#374151;line-height:1.7;white-space:pre-wrap">'+esc(f.text)+'</div></div>';
+      }).join('');
+  }else{
+    h+='<div class="card empty"><div style="font-size:28px;margin-bottom:6px">💡</div><div style="font-size:13px">Your submitted feedback will appear here.</div></div>';
+  }
+  return h;
+}
+async function submitFeedback(){
+  const ta=$('fb-text'),text=(ta&&ta.value||'').trim();
+  if(!text){toast('Write your feedback first');if(ta)ta.focus();return}
+  const p=me();
+  const rec={email:S.me,name:p.n,org:p.o,bpo:viewLabel(),category:$('fb-cat').value,text:text,at:Date.now()};
+  try{
+    const r=await A.addDoc(A.collection(A.db,'feedback'),rec);
+    FEEDBACK.push({fid:r.id,e:rec.email,n:rec.name,o:rec.org,bpo:rec.bpo,cat:rec.category,text:rec.text,t:rec.at});
+    toast('Thank you — your feedback has been sent',true);
+  }catch(err){fail('Sending feedback',err);return}
+  render();
+}
+function rSuperFeedback(){
+  const all=FEEDBACK.slice().sort((a,b)=>b.t-a.t);
+  let h=ctxBar()+'<div class="pg-title">Feedback</div><div class="pg-sub">Everything submitted through the Have a Feedback? button, newest first</div>';
+  const byCat={};all.forEach(f=>{byCat[f.cat||'General']=(byCat[f.cat||'General']||0)+1});
+  h+='<div class="stat-grid">'+
+    '<div class="card"><div class="stat-label">Total</div><div class="stat-val" style="color:#EE4D2D">'+all.length+'</div><div class="stat-note">submissions</div></div>'+
+    Object.keys(byCat).map(c=>{const cc=fbColor(c);
+      return '<div class="card"><div class="stat-label" style="color:'+cc[0]+'">'+esc(c)+'</div><div class="stat-val" style="color:'+cc[0]+'">'+byCat[c]+'</div><div class="stat-note">&nbsp;</div></div>';}).join('')+
+  '</div>';
+  if(!all.length)return h+'<div class="card empty"><div class="empty-t">No feedback yet</div><div style="font-size:13px">Anything submitted through the sidebar button lands here.</div></div>';
+  h+=all.map(f=>{const cc=fbColor(f.cat);
+    return '<div class="card" style="border-left:4px solid '+cc[0]+'">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap">'+
+        '<span class="badge" style="background:'+cc[1]+';color:'+cc[0]+'">'+esc(f.cat||'General')+'</span>'+
+        '<span style="font-family:Nunito;font-weight:800;font-size:13px">'+esc(f.n||f.e)+'</span>'+
+        '<span class="badge" style="background:#F3F4F6;color:#6B7280">'+esc(f.o||'')+'</span>'+
+        (f.bpo?'<span style="font-size:11px;color:#9CA3AF">viewing '+esc(f.bpo)+'</span>':'')+
+        '<span style="font-size:11px;color:#9CA3AF;margin-left:auto">'+fmtT(f.t)+'</span></div>'+
+      '<div style="font-size:11.5px;color:#9CA3AF;margin-bottom:5px">'+esc(f.e)+'</div>'+
+      '<div style="font-size:13.5px;color:#374151;line-height:1.7;white-space:pre-wrap">'+esc(f.text)+'</div></div>';
+  }).join('');
+  return h;
+}
+
 /* ─── super admin: access requests ─── */
 function approveReq(i){
   const r=REQUESTS[i];
@@ -1130,15 +1219,18 @@ function parsePaste(text){
     const email=(c[0]||'').toLowerCase();
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){bad.push(line.slice(0,60));return}
     const name=c[1]||email.split('@')[0];
-    const org=ORGS.find(o=>o.toLowerCase()===String(c[2]||'').toLowerCase())||'';
-    const role=ROLES.find(r=>r.toLowerCase()===String(c[3]||'').toLowerCase())||'Agent';
+    /* tolerant matching — 'In-House', 'InHouse', 'AsiaRecruit' etc. all resolve */
+    const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    const org=ORGS.find(o=>norm(o)===norm(c[2]))||(norm(c[2])?'':guessOrg(email));
+    const role=ROLES.find(r=>norm(r)===norm(c[3]))||'Agent';
     let bpos=[];
-    const raw=String(c[4]||'').toLowerCase();
-    const sup=raw.indexOf('super admin')>=0;
-    const adm=sup||raw.replace('super admin','').indexOf('admin')>=0;
-    if(raw.indexOf('all')>=0)bpos=BPOS.slice();
-    else bpos=BPOS.filter(b=>raw.indexOf(b.toLowerCase())>=0);
+    const raw=String(c[4]||'').toLowerCase(),nraw=norm(raw);
+    const sup=nraw.indexOf('superadmin')>=0;
+    const adm=sup||nraw.replace('superadmin','').indexOf('admin')>=0;
+    if(raw.indexOf('all')>=0||nraw.indexOf('inhouse')>=0)bpos=BPOS.slice();
+    else bpos=BPOS.filter(b=>nraw.indexOf(norm(b))>=0);
     if(!bpos.length&&org&&org!==IH)bpos=[org];
+    if(!bpos.length&&org===IH)bpos=BPOS.slice();
     if(!org){bad.push(email+' — organisation missing or not recognised');return}
     if(!bpos.length){bad.push(email+' — no BPO access specified');return}
     ok.push({e:email,n:name,o:org,r:role,bpos:bpos,adm:adm,sup:sup});
@@ -1215,7 +1307,7 @@ function rPeople(){
   const pv=S.paste.trim()?parsePaste(S.paste):null;
   let h=ctxBar()+'<div class="pg-title">People and access</div><div class="pg-sub">The whitelist. Not on this list means the app will not open at all.</div>';
   h+='<div class="card"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:4px">Paste from Excel</div>'+
-    '<div style="font-size:12.5px;color:#6B7280;margin-bottom:10px">Copy the rows in Excel and paste here. Columns in order: <b>Email · Name · Organisation · Designation · Section access</b>. Access can be <span class="kw">all</span> or a list like <span class="kw">Vads, Admin</span>. A header row is ignored.</div>'+
+    '<div style="font-size:12.5px;color:#6B7280;margin-bottom:10px">Copy the rows in Excel and paste here. Columns in order: <b>Email · Name · Organisation · Designation · Section access</b>. Access can be <span class="kw">all</span> or a list like <span class="kw">Vads, Admin</span>. <b>In House</b> rows with nothing listed get all sections automatically. A header row is ignored.</div>'+
     '<div style="background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;font-size:12.5px;padding:11px 14px;border-radius:10px;line-height:1.6;margin-bottom:12px"><b>Every paste replaces the whole namelist.</b> Anyone not in what you paste is removed and locked out immediately. Paste the complete list, not just the new joiners.</div>'+
     '<textarea class="inp" id="pastebox" rows="4" style="font-family:monospace;font-size:12px;resize:vertical" placeholder="ep.new.agent@shopeemobile-external.com&#9;New Agent&#9;ePerformax&#9;Agent&#9;ePerformax" oninput="setPaste(this.value)">'+esc(S.paste)+'</textarea>';
   if(pv){
@@ -1236,19 +1328,6 @@ function rPeople(){
       '<button class="btn btn-outline" onclick="setPaste(\'\')">Clear</button></div>';
   }
   h+='</div>';
-  h+='<div class="card"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:13px">Or add one person</div>'+
-    '<div style="display:grid;grid-template-columns:2fr 1.4fr 1fr 1fr;gap:11px;margin-bottom:13px">'+
-      '<div><label class="flab">Google email</label><input class="inp" id="pe" placeholder="name@shopeemobile-external.com"></div>'+
-      '<div><label class="flab">Full name</label><input class="inp" id="pn" placeholder="Full name"></div>'+
-      '<div><label class="flab">Organisation</label><select class="inp" id="po">'+ORGS.map(o=>'<option>'+o+'</option>').join('')+'</select></div>'+
-      '<div><label class="flab">Role</label><select class="inp" id="pr">'+ROLES.map(r=>'<option>'+r+'</option>').join('')+'</select></div>'+
-    '</div><label class="flab">Can open these sections</label>'+
-    '<div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">'+
-      BPOS.map(b=>'<label class="tog" style="cursor:pointer"><input type="checkbox" id="pb-'+b.replace(/\s/g,'')+'" style="margin:0"> '+b+'</label>').join('')+
-      '<span style="width:1px;height:22px;background:#E5E7EB;margin:0 3px"></span>'+
-      '<label class="tog" style="cursor:pointer"><input type="checkbox" id="pb-ADM" style="margin:0"> Admin</label>'+
-      '<label class="tog" style="cursor:pointer"><input type="checkbox" id="pb-SUP" style="margin:0"> Super Admin</label>'+
-      '<button class="btn btn-primary" style="margin-left:auto" onclick="addPerson()">Add to namelist</button></div></div>';
   h+='<div class="stat-grid">'+ORGS.map(o=>{
     const g=PEOPLE.filter(p=>p.o===o);
     return '<div class="card"><div class="stat-label">'+esc(o)+'</div><div class="stat-val">'+g.length+'</div><div class="stat-note">'+g.filter(p=>p.r==='Agent').length+' agents · '+g.filter(p=>p.r!=='Agent').length+' other</div></div>';
@@ -1313,8 +1392,10 @@ function renderMain(){
     case 'reminders':m.innerHTML=A?rNudge():rHome();break;
     case 'traffic':m.innerHTML=A?rAdminTraffic():rHome();break;
     case 'qs':m.innerHTML=A?rQs():rHome();break;
+    case 'feedback':m.innerHTML=rFeedback();break;
     case 'people':m.innerHTML=SU?rPeople():rHome();break;
     case 'requests':m.innerHTML=SU?rRequests():rHome();break;
+    case 'fb':m.innerHTML=SU?rSuperFeedback():rHome();break;
     case 'audit':m.innerHTML=SU?rAudit():rHome();break;
     case 'import':m.innerHTML=SU?rImport():rHome();break;
     case 'versions':m.innerHTML=SU?rVersions():rHome();break;
@@ -1483,6 +1564,15 @@ async function loadAll(){
   }catch(err){fail('Loading acknowledgements',err)}
   Object.keys(ACKDOCS).forEach(k=>{ACKS[k]=new Set(Object.keys(ACKDOCS[k]))});
   if(!ACKS[S.me])ACKS[S.me]=new Set();
+
+  // feedback — everyone loads their own, Super Admins load the full set
+  FEEDBACK.length=0;
+  try{
+    const snap=await A.getDocs(isSuper()
+      ?A.collection(A.db,'feedback')
+      :A.query(A.collection(A.db,'feedback'),A.where('email','==',S.me)));
+    snap.forEach(dd=>{const x=dd.data();FEEDBACK.push({fid:dd.id,e:x.email,n:x.name,o:x.org,bpo:x.bpo,cat:x.category,text:x.text,t:x.at})});
+  }catch(err){/* rules may restrict — the page just shows nothing */}
 
   // namelist — admins only
   if(isAdmin()){
