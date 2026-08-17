@@ -244,21 +244,17 @@ let QUESTIONS=[];
    the version number, the title in the sidebar, the gate, the browser tab and the
    history screen. Major = release day, minor = revisions within that same day. */
 const CHANGELOG=[
-{v:'3.3',d:'2026-08-17',by:'hadi.ahmad@shopee.com',notes:[
- 'Removed the prototype banner from every screen',
- 'Code now lives in a private GitHub repository with automatic deployment'
-]},
-{v:'3.2',d:'2026-08-17',by:'import',notes:[
- 'Namelist is now 27 people — 9 In House super admins and 18 BPO admins',
- 'In House accounts can open all three BPO sections; BPO admins are locked to their own',
- 'Added FTE and Coach as designations'
+{v:'3.4',d:'2026-08-17',by:'hadi.ahmad@shopee.com',notes:[
+ 'Hosted on GitHub Pages — updates are made by editing the file in GitHub',
+ 'Removed the prototype banner and the leftover test-account picker',
+ 'Added a one-time Import data screen under Super Admin, so no terminal is needed',
+ 'Super admins can now write acknowledgement records, which the import requires'
 ]},
 {v:'3.0',d:'2026-08-17',by:'import',notes:[
  'Live on Firebase — data persists and is shared across everyone',
  'Google sign-in restricted to the namelist, enforced by Firestore security rules',
  'BPO isolation enforced on the server, not just hidden in the interface',
  'Entry IDs assigned by a transaction so two admins cannot collide',
- 'Undo performs a real reverse write instead of restoring a local snapshot',
  'Imported 49 entries and 950 acknowledgements from the two trackers'
 ]}
 ];
@@ -288,7 +284,7 @@ const dayKey=d=>d.toISOString().slice(0,10);
 function logEv(k,id,b){EVENTS.unshift({t:Date.now(),k:k,w:S.me,b:b,id:id})}
 
 let S={tab:'home',me:null,adminOpen:false,superOpen:false,bpoOpen:false,view:null,q:'',filter:'all',
-  edit:null,orig:null,editNew:false,err:'',denied:null,reqOpen:false,reqDone:false,pickOpen:false,open:null,paste:'',copyText:'',copyLabel:'',copyFor:[],qopen:null,
+  edit:null,orig:null,editNew:false,err:'',denied:null,reqOpen:false,reqDone:false,pickOpen:false,open:null,paste:'',copyText:'',copyLabel:'',copyFor:[],qopen:null,imp:'',impLog:[],
   tfUser:'',tfSort:'total-desc',modal:null};
 let UNDO=null;
 
@@ -408,7 +404,7 @@ function ack(id,ev){if(ev)ev.stopPropagation();if(mine().has(id))return;snap();m
 function askQ(id,ev){if(ev)ev.stopPropagation();snap();QUESTIONS.push({id:id,by:S.me,q:'(demo) Follow-up question raised from the entry card'});if(!mine().has(id))mine().add(id);toast('Question sent to '+MODULES[id.split('-')[0]].owner,true);render()}
 function go(t){S.tab=t;S.q='';S.filter='all';S.edit=null;S.open=null;render()}
 function toggleAdmin(){S.adminOpen=!S.adminOpen;if(S.adminOpen&&['manage','admin','chase','reminders','traffic','qs'].indexOf(S.tab)<0){S.tab='manage';S.edit=null}renderSide();renderMain()}
-function toggleSuper(){S.superOpen=!S.superOpen;if(S.superOpen&&['people','requests','audit','versions'].indexOf(S.tab)<0){S.tab='people';S.edit=null}renderSide();renderMain()}
+function toggleSuper(){S.superOpen=!S.superOpen;if(S.superOpen&&['people','requests','audit','import','versions'].indexOf(S.tab)<0){S.tab='people';S.edit=null}renderSide();renderMain()}
 function toggleBpo(){if(!multiBpo())return;S.bpoOpen=!S.bpoOpen;renderSide()}
 function setView(v){S.view=v;S.bpoOpen=false;S.q='';render();toast('Viewing '+viewLabel())}
 function setQ(v){S.q=v.toLowerCase();renderMain()}
@@ -500,7 +496,7 @@ function renderSide(){
 
   if(isSuper()){
     const open=S.superOpen,pend=REQUESTS.filter(r=>r.st==='pending').length;
-    const t=[{k:'people',l:'People and access',c:PEOPLE.length},{k:'requests',l:'Access requests',c:pend},{k:'audit',l:'Traffic and publishing'},{k:'versions',l:'Version history'}];
+    const t=[{k:'people',l:'People and access',c:PEOPLE.length},{k:'requests',l:'Access requests',c:pend},{k:'audit',l:'Traffic and publishing'},{k:'import',l:'Import data'},{k:'versions',l:'Version history'}];
     $('nav-super').innerHTML='<button class="nav-btn sup-head '+(open?'open':'')+'" onclick="toggleSuper()"><span class="chev">'+(open?'▾':'▸')+'</span><span class="label">Super Admin</span>'+(!open&&pend?'<span class="count">'+pend+'</span>':'')+'</button>'+
       (open?'<div class="adm-body sup">'+t.map(x=>'<button class="nav-btn sub '+(S.tab===x.k?'active':'')+'" onclick="go(\''+x.k+'\')"><span class="label">'+x.l+'</span>'+(x.c?'<span class="count">'+x.c+'</span>':'')+'</button>').join('')+'</div>':'');
   } else $('nav-super').innerHTML='';
@@ -1320,6 +1316,7 @@ function renderMain(){
     case 'people':m.innerHTML=SU?rPeople():rHome();break;
     case 'requests':m.innerHTML=SU?rRequests():rHome();break;
     case 'audit':m.innerHTML=SU?rAudit():rHome();break;
+    case 'import':m.innerHTML=SU?rImport():rHome();break;
     case 'versions':m.innerHTML=SU?rVersions():rHome();break;
     default:m.innerHTML=rModule(S.tab);
   }
@@ -1561,6 +1558,104 @@ async function doUndo(){
   $('toast').style.display='none';
   try{await fn();toast('Reverted');}catch(err){fail('Undo',err)}
   render();
+}
+
+/* ─── one-time data import, super admin only ─── */
+let IMPBUSY=false;
+function setImp(v){S.imp=v}
+function rImport(){
+  const n=(S.impLog||[]).length;
+  let h='<div class="pg-title">Import data</div><div class="pg-sub">A one-time load of the two tracker exports. You should only ever need this once.</div>';
+  h+='<div class="card"><div style="font-family:Nunito;font-weight:800;font-size:15px;margin-bottom:6px">Paste seed-data.json</div>'+
+    '<div style="font-size:12.5px;color:#6B7280;line-height:1.65;margin-bottom:12px">Open <b>seed-data.json</b> on your computer in Notepad or TextEdit, select everything, copy, and paste it below. '+
+    'It contains your namelist, the 49 entries and 950 acknowledgements.<br>Keep that file off the internet — it holds real email addresses.</div>'+
+    '<textarea class="inp" id="impbox" rows="6" style="font-family:monospace;font-size:11.5px;resize:vertical" placeholder=\'{ "entries": [ ... ], "people": [ ... ], "acks": { ... } }\' oninput="setImp(this.value)">'+esc(S.imp||'')+'</textarea>';
+  let parsed=null,err='';
+  if((S.imp||'').trim()){
+    try{
+      parsed=JSON.parse(S.imp);
+      if(!parsed.people||!parsed.entries)throw new Error('This does not look like seed-data.json — no people or entries found.');
+    }catch(e){err=e.message}
+  }
+  if(err)h+='<div style="background:#FEF2F2;color:#B91C1C;font-size:12.5px;padding:11px 14px;border-radius:10px;margin-top:12px">'+esc(err)+'</div>';
+  if(parsed){
+    const pairs=Object.keys(parsed.acks||{}).reduce((t,k)=>t+Object.keys(parsed.acks[k]).length,0);
+    h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:12px">'+
+      [['People',parsed.people.length],['Entries',parsed.entries.length],
+       ['Ack records',Object.keys(parsed.acks||{}).length],['Acknowledgements',pairs]]
+      .map(x=>'<div style="background:#F9FAFB;border-radius:10px;padding:10px 13px"><div style="font-size:10.5px;font-family:Nunito;font-weight:800;color:#6B7280;letter-spacing:.4px">'+x[0].toUpperCase()+'</div>'+
+        '<div style="font-size:19px;font-weight:900;font-family:Nunito">'+x[1]+'</div></div>').join('')+'</div>'+
+      '<div style="display:flex;gap:9px;margin-top:14px;align-items:center">'+
+      '<button class="btn btn-primary" onclick="runImport()"'+(IMPBUSY?' disabled':'')+'>'+(IMPBUSY?'Importing…':'Import into Firebase')+'</button>'+
+      '<button class="btn btn-outline" onclick="setImp(\'\');renderMain()">Clear</button>'+
+      '<span style="font-size:12px;color:#9CA3AF">Safe to run twice — it overwrites rather than duplicating.</span></div>';
+  }
+  h+='</div>';
+  if(n)h+='<div class="card" style="padding:8px 0"><div style="font-family:Nunito;font-weight:800;font-size:15px;padding:10px 14px 6px">Import log</div>'+
+    S.impLog.map(l=>'<div class="log"><span class="ic" style="background:'+(l.ok?'#ECFDF5':'#FEF2F2')+';color:'+(l.ok?'#059669':'#DC2626')+'">'+(l.ok?'✓':'!')+'</span>'+
+      '<div style="flex:1;font-size:12.5px">'+esc(l.t)+'</div></div>').join('')+'</div>';
+  return h;
+}
+function impSay(t,ok){S.impLog=S.impLog||[];S.impLog.unshift({t:t,ok:ok!==false});renderMain()}
+
+async function runImport(){
+  if(IMPBUSY)return;
+  let d;
+  try{d=JSON.parse(S.imp)}catch(e){toast('That is not valid JSON');return}
+  if(!confirm('Import '+d.people.length+' people and '+d.entries.length+' entries into Firebase?\n\nExisting records with the same ID are overwritten.'))return;
+  IMPBUSY=true;S.impLog=[];renderMain();
+  const chunk=async(items,fn,label)=>{
+    let b=A.writeBatch(A.db),n=0,total=0;
+    for(const it of items){
+      fn(b,it);
+      if(++n===400){await b.commit();total+=n;b=A.writeBatch(A.db);n=0}
+    }
+    if(n){await b.commit();total+=n}
+    impSay(label+': '+total);
+    return total;
+  };
+  try{
+    await chunk(d.people,(b,x)=>b.set(A.doc(A.db,'people',x.email),
+      {name:x.name,org:x.org,designation:x.designation,bpos:x.bpos,adm:!!x.adm,sup:!!x.sup,
+       addedBy:S.me,addedAt:Date.now()},{merge:true}),'People');
+
+    await chunk(d.entries,(b,x)=>{
+      const o={ref:x.ref,module:x.module,audience:x.audience,status:x.status||'pub',date:x.date,
+        title:x.title||'',body:x.body||'',category:x.category||'',tag:x.tag||'',flow:x.flow||'',
+        score:x.score||'',follow:x.follow||'',sharedBy:x.sharedBy||'',link:x.link||'',media:x.media||[],
+        source:x.source||'',publishedBy:S.me,publishedAt:new Date(x.date+'T09:00:00').getTime()};
+      b.set(A.doc(A.db,'entries',x.id),o,{merge:true});
+    },'Entries');
+
+    const ackRows=Object.keys(d.acks||{}).map(e=>({e:e,items:d.acks[e]}));
+    await chunk(ackRows,(b,x)=>b.set(A.doc(A.db,'acks',x.e),{email:x.e,items:x.items},{merge:true}),'Acknowledgement records');
+
+    const counters={};
+    d.entries.forEach(x=>{
+      const k=x.module+'_'+x.audience, n=parseInt(String(x.ref).split('-')[1],10);
+      if(!isNaN(n))counters[k]=Math.max(counters[k]||0,n);
+    });
+    await chunk(Object.keys(counters).map(k=>({k:k,n:counters[k]})),
+      (b,x)=>b.set(A.doc(A.db,'counters',x.k),{n:x.n}),'Counters');
+
+    if(d.orphans){
+      await A.setDoc(A.doc(A.db,'meta','orphans'),{rows:d.orphans,importedAt:Date.now()});
+      impSay('Unmatched acknowledgement rows: '+d.orphans.length);
+    }
+    await A.setDoc(A.doc(A.db,'changelog',APP_V),
+      {v:APP_V,date:new Date().toISOString().slice(0,10),by:S.me,
+       notes:['Data imported from the two tracker exports']},{merge:true});
+
+    IMPBUSY=false;S.imp='';
+    impSay('Import finished — reloading');
+    await loadAll();
+    toast('Import complete');
+    render();
+  }catch(err){
+    IMPBUSY=false;
+    impSay('Failed: '+(err.message||err),false);
+    fail('Import',err);
+  }
 }
 
 /* ─── writes ─── */
